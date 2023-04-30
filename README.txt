@@ -1,5 +1,5 @@
-Last edited on Mar 8 2024 by Go Fuck Yourself
-Last edited before conversion, on Dec 25, 2017 by Go Fuck yourself
+Last edited on Apr 30 2023
+Last edited before conversion, on Dec 25, 2017
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -13,7 +13,7 @@ SETUP:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-check out "Cinnamon Bot Help (owner's edition).html" for more loose documentation and better formatting than raw txt
+check out "Cinnamon Bot Help.html" for more loose documentation and better formatting than raw txt
 
 
 
