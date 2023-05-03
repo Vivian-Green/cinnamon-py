@@ -13,7 +13,7 @@ SETUP:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-check out "Cinnamon Bot Help.html" for more loose documentation and better formatting than raw txt
+check out "Cinnamon Bot Help.html" in ./assets/ for more loose documentation and better formatting than raw txt, but still garbage, viv from 5 years ago
 
 
 
