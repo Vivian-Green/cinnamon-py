@@ -9,6 +9,7 @@ The contained files are for a discord bot entitled "cinnamon", which has feature
 
 SETUP:
 - Once you somehow gotten this file and invited the bot to your server, if for some reason it is not nicknamed "cinnamon", fix that, as some commands are otherwise recursive
+- edit example-token.json
 - run bot.py for a console window, or bot.pyw for... not that
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
