@@ -1,7 +1,7 @@
 # cinnamon-py changelog
 version numbers here are from local dev branch, and not all are reflected on github history.
 
-</br></br></br>
+</br>
 
 # changes in 2.3.1:
 - moved changelog from readme.txt to changelog.md, also tweaked gitignore to actually work
