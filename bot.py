@@ -1,13 +1,11 @@
-#    Cinnamon bot v2.2.0 for discord, written by go Viv, last update Feb 20, 2023 (almost complete re-write to actually function with new discord.py, also goddamn this was awful, and still is)
-cinnamonVersion = "2.2.1"
+#    Cinnamon bot v2.2.3 for discord, written by Viv, last update Jun 25, 2023 (logging function cleanup & general improvement)
+cinnamonVersion = "2.2.3"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
-# todo: add runtime prompt
 # todo: refactor.. comments.. to not be embarrasing if seen by a potential employer
 # todo: move readme.txt to readme.md, and separate version history
-# todo: figure out why "Cinnamon Bot Help.html" is in both root and assets, and fix that
-# todo: move token to its own config file
+# todo: time and datetime usage is redundant, remove one
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[START DEFINITIONS & IMPORTS]
 
@@ -26,6 +24,8 @@ import discord
 import discord.ext
 import json
 
+from datetime import datetime, timedelta
+
 def loadConfig(name: str):
     return json.load(open(os.path.join(os.path.dirname(__file__), str("configs\\" + name))))
 
@@ -35,12 +35,21 @@ playlistURLs = []
 attachments = ""
 prevMessage = ""
 messageContent = ""
+initTime = datetime.now().replace(microsecond=0)
+initTimeSession = datetime.now().replace(microsecond=0)
 Nope = 0
 
 simpleResponses = loadConfig("simpleResponses.json")
 
 config = loadConfig("config.json")
-token, badEvalWords, bot_prefix= config["token"], config["badEvalWords"], config["prefix"]
+token = loadConfig("token.json")["token"]
+badEvalWords = config["badEvalWords"]
+bot_prefix = config["prefix"]
+
+defaultLoggingHtml = ""
+with open(os.path.join(os.path.dirname(__file__), config["defaultLoggingHtml"]), "r") as defaultLoggingHtmlFile:
+    defaultLoggingHtml = defaultLoggingHtmlFile.readlines()
+    defaultLoggingHtmlFile.close()
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END DEFINITIONS & IMPORTS]
 
@@ -99,84 +108,97 @@ def containsAny(textToCheck: str, texts):
             return len(text)
     return False
 
+async def sendRuntime(message: object):
+    global initTime
+    global initTimeSession
+    rn = datetime.now().replace(microsecond=0)
+    timeDeltaSession = (rn - initTimeSession)
+    timeDelta = (rn - initTime)
 
-async def appendToLog(message: object):#ran this shit through chatgpt 4 to make it more readable lmao
+    await message.channel.send("this discord session runtime: " + str(timeDeltaSession) + "\ncinnamon runtime: " + str(timeDelta))
+
+
+async def appendToLog(message: object, logFolderPath: str):
+    # writes message to log file AND console
     global messageContent
     global attachments
-    try:
-        log_dir = os.path.join(os.path.dirname(__file__), 'logs', str(message.guild), str(message.channel) + '.html')
-        with open(log_dir, 'a', encoding='utf-8') as file:
-            author_name = message.author.display_name
-            attachments = [attachment.url for attachment in message.attachments]
-            timestamp = message.created_at.strftime("%a, %d %b %Y %H:%M:%S +0000")
-            color = hexToRGBA(str(message.author.color), 0.5)
-            if message.author.bot:
-                print(f'    >>>CINNAMON: {messageContent}\n')
-                try:
-                    file.write(f'<p style="padding-left: 20px; margin-left: 5px; padding-top: 8px; padding-bottom: 8px; background-color: {color}">{timestamp}<br /><br />CINNAMON (bot): {messageContent}<br /></p>')
-                except:
-                    file.write(f'<p style="padding-left: 20px; margin-left: 5px; padding-top: 8px; padding-bottom: 8px; background-color: #d9b6d9;">{timestamp}<br /><br />CINNAMON (bot): MESSAGE CONTAINS UNICODE CHARACTERS THAT I DON\'T WANT TO FIX AT THIS TIME<br /></p>')
-            else:
-                file.write(f'<p style="padding-left: 20px; margin-left: 20px; padding-top: 8px; padding-bottom: 8px; background-color: {color}">{timestamp}<br /><br />{author_name}: {messageContent}<br /></p>')
-                print(f'    {author_name}: {messageContent}\n')
-            for url in getURLs(messageContent):
-                file.write(f'<a href="{url}" style="background-color: rgba(150, 200, 255, 0.2);">{url}</a>')
 
-            for attachment in message.attachments:
-                if attachment.url not in messageContent and attachment.url not in attachments:
-                    attachments.append(attachment.url)
+    logPath = os.path.join(logFolderPath, str(message.channel) + '.html')
+    file = open(logPath, 'a', encoding='utf-8')
 
-            # Get message.embeds and message.attachments
-            embeds = str(message.embeds)
-            attachments = getURLs(str(message.attachments))
+    author_name = message.author.display_name
+    attachments = [attachment.url for attachment in message.attachments]
+    timestamp = message.created_at.strftime("%a, %d %b %Y %H:%M:%S +0000")
+    color = hexToRGBA(str(message.author.color), 0.5)
 
-            # Loop through every attached file
-            for i in range(len(attachments)):
-                file_url = attachments[i][0:-3]
-                print(file_url)
+    regularTextHTMLHeader = '<p class="text"'
+    indentedLoggingCSSHeader = '<p class="indentedText"'
 
-                # If the attached file is an image
-                if ".jpg" in file_url or ".png" in file_url or ".gif" in file_url:
-                    # Embed that mfer
-                    file.write(f'\n<p style="padding-left: 20px; margin-left: 20px; margin-top: -16px; padding-bottom: 8px; background-color: {color}">Attachment: <img src="{file_url}" alt="{file_url}"></p>')
-                else:
-                    # Embed clickable link into log
-                    file.write(r'<a href="' + file_url + r'" style="background-color: rgba(150, 200, 255, 0.2);">' + file_url + '</a>')
+    if message.author.bot:
+        print(f'    >>>CINNAMON: {messageContent}\n')
+        try:
+            file.write(f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />CINNAMON (bot): {messageContent}<br /></p>')
+        except:
+            file.write(f'{regularTextHTMLHeader}>{timestamp}<br /><br />CINNAMON (bot): FAILED TO LOG MESSAGE, MAY CONTAIN UNICODE CHARACTERS THAT I DON\'T WANT TO FIX AT THIS TIME<br /></p>')
+    else:
+        file.write(f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />{author_name}: {messageContent}<br /></p>')
+        print(f'    {author_name}: {messageContent}\n')
 
-            # Loop through every embedded file
-            for i in range(len(getURLs(embeds))):
-                file_url = getURLs(embeds)[i][0:-3]
-                print(file_url)
+    for attachment in message.attachments:
+        if attachment.url not in messageContent and attachment.url not in attachments:
+            attachments.append(attachment.url)
 
-                # If the embedded file is an image
-                if ".jpg" in file_url or ".png" in file_url or ".gif" in file_url:
-                    # If the file is from a Discord guild
-                    if "discordapp" in file_url:
-                        # Embed the image into log
-                        file.write('\n<p>Discord embed:<p><img src="' + file_url + '" alt="' + file_url + '">')
-                else:
-                    # Log raw link to file
-                    file.write(r'<a href="' + file_url + r'" style="background-color: rgba(150, 200, 255, 0.2);">' + file_url + '</a>')
+    # Get message.embeds, message.attachments, and urls in message.contents, and tape them together
+    embeds = str(message.embeds)
+    attachments = getURLs(str(message.attachments))
 
-            file.write("\n")
-            # Close the file
-            file.close()
+    for embed in embeds:
+        attachments.append(embed)
 
-    except Exception as e:
-        print(f'Error writing to log file: {e}')
-        return None, None
+    for url in getURLs(messageContent):
+        attachments.append(url)
+
+    # Loop through every attached file
+    for i in range(len(attachments)):
+        file_url = attachments[i][0:-3]
+        print(file_url)
+
+        # If the attached file is an image
+        urlIsImage = ".jpg" in file_url or ".png" in file_url or ".webp" in file_url or ".gif" in file_url
+        if urlIsImage:
+            # write html for image to log
+            file.write(f'\n{indentedLoggingCSSHeader} style="background-color: {color}"><img src="{file_url}" alt="{file_url}" class="embeddedImage" style="max-height: 50%; height: auto; loading="lazy""></p>')
+        else:
+            # add clickable link into log
+            file.write(r'<a href="' + file_url + r'" style="background-color: rgba(150, 200, 255, 0.2);">' + file_url + '</a>')
+
+    file.write("\n")
+    file.close()
 
 
 async def tryToLog(message: object):
     global messageContent
+    global defaultLoggingHtml
+
+    logFolderPath = os.path.join(os.path.dirname(__file__), str("logs\\" + str(message.guild)))
+    logFilePath = str(logFolderPath + "\\" + str(message.channel) + '.html')
+
+    # ensure file exists before trying
+    if not os.path.exists(logFolderPath):
+        # make folder
+        os.makedirs(logFolderPath)
+
+    if not os.path.isfile(logFilePath):
+        # log doesn't exist yet, make it
+        logFile = open(logFilePath, "w+")
+        for i in range(len(defaultLoggingHtml)):
+            print(defaultLoggingHtml[i])
+            logFile.write(defaultLoggingHtml[i])
+
+        logFile.close()
+
     print("  " + str(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())))  # print current time
-    try:
-        await appendToLog(message)
-    except:
-        if not os.path.exists(os.path.join(os.path.dirname(__file__), str("logs\\" + str(message.guild)))):
-            os.makedirs(os.path.join(os.path.dirname(__file__), str("logs\\" + str(message.guild))))
-        open(str(os.path.join(os.path.dirname(__file__), str("logs\\" + str(message.guild) + "\\")) + str(message.channel) + '.html'), "w+").close()
-        await appendToLog(message)
+    await appendToLog(message, logFolderPath)
 
 
 def getRollsAndDice(command):
@@ -335,12 +357,21 @@ async def handlePrompts(message: object):
         embed = discord.Embed(title=None, description='Ping: {}ms'.format(round((t2 - t1) * 1000)), color=0x2874A6)
         await message.channel.send(embed=embed)
 
-    if "cinnamon, eval(" in messageContent.lower():
+    if "cinnamon, runtime" in messageContent.lower():
+        await sendRuntime(message)
+
+    if "cinnamon, eval(" in messageContent.lower() or "/solve " in messageContent.lower():
+        myCharOffset = [15, 1]
+        if "cinnamon, eval(" in messageContent.lower():
+            myCharOffset = [15, 1]
+        else:
+            myCharOffset = [7, 0]
+
         if containsAny(messageContent, badEvalWords):
             await message.channel.send("fuck you.")
         else:
             try:
-                await message.channel.send(eval(messageContent[15:len(messageContent) - 1]))
+                await message.channel.send(eval(messageContent[myCharOffset[0]:len(messageContent) - myCharOffset[1]]))
             except:
                 await message.channel.send("snake said no")
         messageContent = ""
@@ -406,14 +437,19 @@ async def handleCommand(message: object):
         await message.channel.send("Hey, you're not a doofus! Good job, you!")
     if messageContent.lower().startswith(bot_prefix+"goodbot"):
         await message.channel.send(("Arigatogozaimasu, " + message.author.display_name + "-sama! >.<"))
+    if messageContent.lower().startswith(bot_prefix+"runtime"):
+        await sendRuntime(message)
 
 
 class Main:
     @client.event
     async def on_ready():
+        global initTimeSession
+
         print("\n\n\n\n\nLogin Successful!\nName:", client.user.name, "\nID:", client.user.id)
         print("Discord.py version:", discord.__version__, "\nCinnamon version:", cinnamonVersion)
         print("\n\n\n\n\n")
+        initTimeSession = datetime.now().replace(microsecond=0)
         await client.change_presence(activity=discord.Game('Call me cinnamon'))
 
     @client.event

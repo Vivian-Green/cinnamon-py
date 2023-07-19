@@ -78,3 +78,14 @@ changes in 2.2.0:
 changes in 2.2.1:
     some quick tweaks to comments to be more github-friendly
     removed some unnecessary debug statements, most of them "BALLS2" or something similar.
+
+changes in 2.2.2:
+    webp attachments will now be recognized as images by the appendToLog function
+    cleaned up appendToLog and tryToLog to be more readable
+
+changes in 2.3.0:
+    added new shorthand for "cinnamon, eval(<expression>)" command: /solve <expression>. This matches SQ's (likely CMI's) /solve syntax, but accepts python expressions
+    fixed a few typos
+    removed already finished todos
+    FINALLY moved token to its own config
+    added runtime prompts ("cinnamon, runtime" and "!>runtime")

@@ -1,6 +1,6 @@
 {
-	"token": "bot token here",
 	"prefix": "!>",
+	"defaultLoggingHtml": "assets\\defaultLoggingHTML.html",
 	"badEvalWords": [
 		"()",
 		"{",
