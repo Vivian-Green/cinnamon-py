@@ -3,6 +3,11 @@ version numbers here are from local dev branch, and not all are reflected on git
 
 </br>
 
+# changes in 2.3.3:
+- overhauled Cinnamon Bot Help.html
+- certain prompts can now be used with or without a space
+- removed a very old meme & an equally old reference.
+
 # changes in 2.3.2:
 - renamed !>superhelp to !>help
 - !> help now shares a direct link to a preview of Cinnamon Bot Help.html instead of sharing the file

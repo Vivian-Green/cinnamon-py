@@ -8,6 +8,7 @@ description = "Multi-purpose bot that does basically anything I could think of"
 # todo: time and datetime usage is redundant, remove one
 # todo: this line exists in README.txt, fix that:
 #      - Once you somehow gotten this file and invited the bot to your server, if for some reason it is not nicknamed "cinnamon", fix that, as some commands are otherwise recursive
+# todo: make "cinnamon, cat" work
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[START DEFINITIONS & IMPORTS]
 
@@ -327,7 +328,7 @@ async def handlePrompts(message: object):
             Nope = 50
         if containsAny(messageContent, ["cinnamon, kys", "cinnamon kys", "kys cinnamon", "kys, cinnamon"]):
             await message.channel.send("a'k!")  # Sequential art, scarlet
-            Nope = 1000
+            Nope = 5000
 
     if containsAny(messageContent, ["cinnamon, say", "cinnamon, say"]):
         startChar = containsAny(messageContent, ["cinnamon, say", "cinnamon, say"]) + 1
@@ -344,7 +345,7 @@ async def handlePrompts(message: object):
         # os.listdir(os.path.join(os.path.dirname(__file__), str("assets\\cats")))
         # await message.channel.send( file=discord.File(os.path.join(os.path.dirname(__file__), str("assets\\cats\\"))+os.listdir(os.path.join(os.path.dirname(__file__), str("assets\\cats")))[random.randint(0, len(os.listdir(os.path.join(os.path.dirname(__file__), str("assets\\cats")))))]);
 
-    if "cinnamon, rick roll" in messageContent.lower():  # Never gonna give you up!
+    if "cinnamon, rick roll" in messageContent.lower() or "cinnamon, rickroll" in messageContent.lower():  # Never gonna give you up!
         await rickRoll(message)
 
     if "cinnamon, lovecalc" in messageContent.lower():
@@ -389,12 +390,8 @@ async def handlePrompts(message: object):
     if "roll " in messageContent.lower():
         await roll(messageContent.lower()[messageContent.lower().find("roll "):len(messageContent.lower())], message)
 
-    if "for shame" in messageContent.lower():
-        await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\misc\\flandersShame.png")))))
     if "lewdsign" in messageContent.lower() or "lewd sign" in messageContent.lower() or "lewd_sign" in messageContent.lower():
         await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\lewdSign\\") + str(random.randint(0, 13)) + ".png"))))
-    if "put up" in messageContent.lower() and "wolfjob" in messageContent.lower():  #:)
-        await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\misc\\wolfjob.jpg")))))
 
 
 async def handleRegularMessage(message: object):
