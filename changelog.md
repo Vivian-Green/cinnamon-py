@@ -3,6 +3,10 @@ version numbers here are from local dev branch, and not all are reflected on git
 
 </br>
 
+# changes in 2.3.2:
+- renamed !>superhelp to !>help
+- !> help now shares a direct link to a preview of Cinnamon Bot Help.html instead of sharing the file
+
 # changes in 2.3.1:
 - moved changelog from readme.txt to changelog.md, also tweaked gitignore to actually work
 

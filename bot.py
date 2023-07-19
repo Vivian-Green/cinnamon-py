@@ -1,11 +1,13 @@
-#    Cinnamon bot v2.3.1 for discord, written by Viv, last update Jul 19, 2023 (added runtime command & dedicated token config; cleanup)
-cinnamonVersion = "2.3.1"
+#    Cinnamon bot v2.3.2 for discord, written by Viv, last update Jul 19, 2023 (renamed !>superhelp to !>help; direct link to github help html preview)
+cinnamonVersion = "2.3.2"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
 # todo: refactor.. comments.. to not be embarrasing if seen by a potential employer
 # todo: move readme.txt to readme.md, and separate version history
 # todo: time and datetime usage is redundant, remove one
+# todo: this line exists in README.txt, fix that:
+#      - Once you somehow gotten this file and invited the bot to your server, if for some reason it is not nicknamed "cinnamon", fix that, as some commands are otherwise recursive
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[START DEFINITIONS & IMPORTS]
 
@@ -428,8 +430,9 @@ async def handleCommand(message: object):
     print("    !!>" + message.author.display_name + ": " + messageContent + "\n")
 
     # commands that can't be processed by discord's command api, because it is crap (as of 5 years ago, I have not checked this since). Oh, wait, it's all the commands. huh.
-    if messageContent.lower().startswith(bot_prefix+"superhelp"):
-        await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\Cinnamon Bot Help.html")))))
+    if messageContent.lower().startswith(bot_prefix+"help"):
+        await message.channel.send("https://htmlpreview.github.io/?https://github.com/Vivian-Green/cinnamon-py/blob/main/assets/Cinnamon%20Bot%20Help.html")
+        # await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\Cinnamon Bot Help.html")))))
     if messageContent.lower().startswith(bot_prefix+"getlog"):
         await message.author.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("logs\\" + str(message.guild) + "\\")) + str(message.channel) + '.html')))
         await message.channel.send("Check your DM's!")
@@ -455,7 +458,7 @@ class Main:
     @client.event
     async def on_server_join(guild):
         await client.send_message(guild, "Hiya! you seem to have added me to your guild! Thanks for that! ~<3")
-        await client.send_message(guild, "try typing !>superhelp for an in depth list of all the things I can do!")
+        await client.send_message(guild, "try typing !>help for an in depth list of all the things I can do!")
 
     @client.event
     async def on_error(self, event):
