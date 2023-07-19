@@ -1,5 +1,5 @@
-#    Cinnamon bot v2.2.3 for discord, written by Viv, last update Jun 25, 2023 (logging function cleanup & general improvement)
-cinnamonVersion = "2.2.3"
+#    Cinnamon bot v2.3.1 for discord, written by Viv, last update Jul 19, 2023 (added runtime command & dedicated token config; cleanup)
+cinnamonVersion = "2.3.1"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
