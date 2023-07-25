@@ -404,12 +404,6 @@ async def handleRegularMessage(message: object):
     if ImAwakeAndNotTalkingToABot:
         await handlePrompts(message)
     else:
-        # tape to make lewdie not respond to dumb
-        # todo: remove when gh fixes his own damn bot
-        if len(messageContent) == 3:
-            if containsAny(messageContent, ["..."]) or (bool(re.search(r"\d\.\d", messageContent)) and not containsAny(messageContent, ["0.0", "4.4", "7.7", "9.9"])):
-                await message.delete()
-
         # sleepy prompts
         Nope -= 1
         if containsAny(messageContent, ["good morning, cinnamon", "good morning cinnamon"]):
