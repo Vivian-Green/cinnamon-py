@@ -1,5 +1,7 @@
 logs/*
 old-logs/*
+configs/old/*
+configs/None/*
 assets/lewdSign/*
 assets/misc/*
 configs/token.json

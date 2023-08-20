@@ -1,5 +1,5 @@
-#    Cinnamon bot v2.3.2 for discord, written by Viv, last update Jul 19, 2023 (renamed !>superhelp to !>help; direct link to github help html preview)
-cinnamonVersion = "2.3.2"
+#    Cinnamon bot v2.4.0 for discord, written by Viv, last update Aug 20, 2023 (create cinDice and cinLogging modules, move existing code there)
+cinnamonVersion = "2.4.0"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
@@ -12,22 +12,29 @@ description = "Multi-purpose bot that does basically anything I could think of"
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[START DEFINITIONS & IMPORTS]
 
-import math
-import time
-import random
-import traceback
-import logging
-import re
-import os.path
 import os
+import os.path
+import json
+
+from logging import warning
+import traceback
+
 import urllib.request
 import urllib.error
+
+import time
+from datetime import datetime
+
 import asyncio
 import discord
 import discord.ext
-import json
 
-from datetime import datetime, timedelta
+import random
+import re
+
+import cinDice
+import cinLogging #logging import changed to only import warning to prevent confusion here
+
 
 def loadConfig(name: str):
     return json.load(open(os.path.join(os.path.dirname(__file__), str("configs\\" + name))))
@@ -49,20 +56,10 @@ token = loadConfig("token.json")["token"]
 badEvalWords = config["badEvalWords"]
 bot_prefix = config["prefix"]
 
-defaultLoggingHtml = ""
-with open(os.path.join(os.path.dirname(__file__), config["defaultLoggingHtml"]), "r") as defaultLoggingHtmlFile:
-    defaultLoggingHtml = defaultLoggingHtmlFile.readlines()
-    defaultLoggingHtmlFile.close()
-
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END DEFINITIONS & IMPORTS]
-
 
 def getURLs(string):
     return re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', string)
-
-def hexToRGBA(hexValue, alpha):
-    h = tuple(int(hexValue.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
-    return "rgba(" + str(h[0]) + ", " + str(h[1]) + ", " + str(h[2]) + ", " + str(alpha) + ")"
 
 def ytCrawl(url):
     global playlistURLs
@@ -119,164 +116,6 @@ async def sendRuntime(message: object):
     timeDelta = (rn - initTime)
 
     await message.channel.send("this discord session runtime: " + str(timeDeltaSession) + "\ncinnamon runtime: " + str(timeDelta))
-
-
-async def appendToLog(message: object, logFolderPath: str):
-    # writes message to log file AND console
-    global messageContent
-    global attachments
-
-    logPath = os.path.join(logFolderPath, str(message.channel) + '.html')
-    file = open(logPath, 'a', encoding='utf-8')
-
-    author_name = message.author.display_name
-    attachments = [attachment.url for attachment in message.attachments]
-    timestamp = message.created_at.strftime("%a, %d %b %Y %H:%M:%S +0000")
-    color = hexToRGBA(str(message.author.color), 0.5)
-
-    regularTextHTMLHeader = '<p class="text"'
-    indentedLoggingCSSHeader = '<p class="indentedText"'
-
-    if message.author.bot:
-        print(f'    >>>CINNAMON: {messageContent}\n')
-        try:
-            file.write(f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />CINNAMON (bot): {messageContent}<br /></p>')
-        except:
-            file.write(f'{regularTextHTMLHeader}>{timestamp}<br /><br />CINNAMON (bot): FAILED TO LOG MESSAGE, MAY CONTAIN UNICODE CHARACTERS THAT I DON\'T WANT TO FIX AT THIS TIME<br /></p>')
-    else:
-        file.write(f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />{author_name}: {messageContent}<br /></p>')
-        print(f'    {author_name}: {messageContent}\n')
-
-    for attachment in message.attachments:
-        if attachment.url not in messageContent and attachment.url not in attachments:
-            attachments.append(attachment.url)
-
-    # Get message.embeds, message.attachments, and urls in message.contents, and tape them together
-    embeds = str(message.embeds)
-    attachments = getURLs(str(message.attachments))
-
-    for embed in embeds:
-        attachments.append(embed)
-
-    for url in getURLs(messageContent):
-        attachments.append(url)
-
-    # Loop through every attached file
-    for i in range(len(attachments)):
-        file_url = attachments[i][0:-3]
-        print(file_url)
-
-        # If the attached file is an image
-        urlIsImage = ".jpg" in file_url or ".png" in file_url or ".webp" in file_url or ".gif" in file_url
-        if urlIsImage:
-            # write html for image to log
-            file.write(f'\n{indentedLoggingCSSHeader} style="background-color: {color}"><img src="{file_url}" alt="{file_url}" class="embeddedImage" style="max-height: 50%; height: auto; loading="lazy""></p>')
-        else:
-            # add clickable link into log
-            file.write(r'<a href="' + file_url + r'" style="background-color: rgba(150, 200, 255, 0.2);">' + file_url + '</a>')
-
-    file.write("\n")
-    file.close()
-
-
-async def tryToLog(message: object):
-    global messageContent
-    global defaultLoggingHtml
-
-    logFolderPath = os.path.join(os.path.dirname(__file__), str("logs\\" + str(message.guild)))
-    logFilePath = str(logFolderPath + "\\" + str(message.channel) + '.html')
-
-    # ensure file exists before trying
-    if not os.path.exists(logFolderPath):
-        # make folder
-        os.makedirs(logFolderPath)
-
-    if not os.path.isfile(logFilePath):
-        # log doesn't exist yet, make it
-        logFile = open(logFilePath, "w+")
-        for i in range(len(defaultLoggingHtml)):
-            print(defaultLoggingHtml[i])
-            logFile.write(defaultLoggingHtml[i])
-
-        logFile.close()
-
-    print("  " + str(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())))  # print current time
-    await appendToLog(message, logFolderPath)
-
-
-def getRollsAndDice(command):
-    # extract rolls from command
-    rolls = re.findall(r'\d+d', command)
-    if len(rolls) == 0:
-        rolls = "1"
-    else:
-        rolls = rolls[0]
-        rolls = rolls[0:-1]
-
-    #extract die from command
-    die = re.findall(r'd\d+', command)
-    if len(die) == 0:
-        die = "20"
-    else:
-        die = die[0]
-        die = die[1:]
-
-    # rolled 0D20 or 1D0 or something like that
-    if int(rolls) < 1: rolls = "1"
-    if int(die) < 1: die = "1"
-
-    # return [rolls, die] as int[]
-    return [int(rolls), int(die)]
-
-
-async def roll(command: str, message):
-    advantage = 0
-    results = []
-
-    rollsAndDice = getRollsAndDice(command)
-    rolls = rollsAndDice[0]
-    die = rollsAndDice[1]
-
-    response = "Rolling "+str(rolls)+" D"+str(die)+"(s)...\n"
-
-    if "adv" in command:
-        response = response + "rolling with adv: \n"
-        advantage = 1
-    elif "dis" in command:
-        advantage = -1
-        response = response + "rolling with disadv: \n"
-
-    # for each die,
-    for i in range(rolls):
-        # if there are multiple dice, add roll number to response
-        if rolls > 1:
-            response = response + "roll " + str(i+1) + ": "
-
-        # generate 2 random rolls,
-        rng = [math.floor(random.random()*die), math.floor(random.random()*die)]
-        if die != 10:
-            # add 1 to non-d10 rolls,
-            rng = [rng[0]+1, rng[1]+1]
-
-        # then, if in adv or disadv state, add both rolls to response if in an adv/disadv state, and choose higher or lower rng value,
-        if advantage != 0:
-            response = response + str(rng) + " - "
-            if advantage == 1:
-                rng = [max(rng)]
-            elif advantage == -1:
-                rng = [min(rng)]
-
-        # then, add chosen die to results & response
-        results.append(rng[0])
-        response = response + str(rng[0]) + "\n"
-
-    # after rolling, if multiple dice were rolled, add some math to response, with results
-    if rolls > 1:
-        response = response + "average: " + str(sum(results) / len(results))
-        response = response + "\nmin: " + str(min(results))
-        response = response + "\nmax: " + str(max(results))
-
-    await message.channel.send(response)
 
 
 async def handleSimpleResponses(message):
@@ -364,15 +203,15 @@ async def handlePrompts(message: object):
         await sendRuntime(message)
 
     if "cinnamon, eval(" in messageContent.lower() or "/solve " in messageContent.lower():
-        myCharOffset = [15, 1]
-        if "cinnamon, eval(" in messageContent.lower():
-            myCharOffset = [15, 1]
-        else:
-            myCharOffset = [7, 0]
-
         if containsAny(messageContent, badEvalWords):
             await message.channel.send("fuck you.")
         else:
+            myCharOffset = [15, 1]
+            if "cinnamon, eval(" in messageContent.lower():
+                myCharOffset = [15, 1]
+            else:
+                myCharOffset = [7, 0]
+
             try:
                 await message.channel.send(eval(messageContent[myCharOffset[0]:len(messageContent) - myCharOffset[1]]))
             except:
@@ -388,7 +227,9 @@ async def handlePrompts(message: object):
             await message.channel.send("failed to send URLs, were there too many URLs in the playlist to send? Char limit is 2000")
 
     if "roll " in messageContent.lower():
-        await roll(messageContent.lower()[messageContent.lower().find("roll "):len(messageContent.lower())], message)
+        startOfRollText = messageContent.lower().find("roll ")
+        rollCommandText = messageContent.lower()[startOfRollText:len(messageContent.lower())]
+        await cinDice.roll(rollCommandText, message)
 
     if "lewdsign" in messageContent.lower() or "lewd sign" in messageContent.lower() or "lewd_sign" in messageContent.lower():
         await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\lewdSign\\") + str(random.randint(0, 13)) + ".png"))))
@@ -398,7 +239,7 @@ async def handleRegularMessage(message: object):
     global messageContent
     global Nope
 
-    await tryToLog(message)
+    await cinLogging.tryToLog(message)
     ImAwakeAndNotTalkingToABot = Nope <= 0 and not message.author.bot
 
     if ImAwakeAndNotTalkingToABot:
@@ -454,7 +295,7 @@ class Main:
     @client.event
     async def on_error(self, event):
         print("I oopsie whoopsied! I fucko boingoed!")
-        logging.warning(traceback.format_exc())
+        warning(traceback.format_exc())
         print(event)
         try:
             message = event[0]
