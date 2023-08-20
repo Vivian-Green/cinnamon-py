@@ -6,3 +6,5 @@ assets/lewdSign/*
 assets/misc/*
 configs/token.json
 versions/*
+.idea/*
+__pycache__/*

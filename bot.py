@@ -1,10 +1,8 @@
-#    Cinnamon bot v2.4.0 for discord, written by Viv, last update Aug 20, 2023 (create cinDice and cinLogging modules, move existing code there)
-cinnamonVersion = "2.4.0"
+# Cinnamon bot v2.4.1 for discord, written by Viv, last update Aug 20, 2023 (create strings.json and more refactoring)
+cinnamonVersion = "2.4.1"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
-# todo: refactor.. comments.. to not be embarrasing if seen by a potential employer
-# todo: move readme.txt to readme.md, and separate version history
 # todo: time and datetime usage is redundant, remove one
 # todo: this line exists in README.txt, fix that:
 #      - Once you somehow gotten this file and invited the bot to your server, if for some reason it is not nicknamed "cinnamon", fix that, as some commands are otherwise recursive
@@ -33,11 +31,12 @@ import random
 import re
 
 import cinDice
-import cinLogging #logging import changed to only import warning to prevent confusion here
+import cinLogging # logging import changed to only import warning to prevent confusion here
 
 
 def loadConfig(name: str):
     return json.load(open(os.path.join(os.path.dirname(__file__), str("configs\\" + name))))
+
 
 client = discord.Client(intents=discord.Intents.all())
 
@@ -53,13 +52,16 @@ simpleResponses = loadConfig("simpleResponses.json")
 
 config = loadConfig("config.json")
 token = loadConfig("token.json")["token"]
+strings = loadConfig("strings.json")
 badEvalWords = config["badEvalWords"]
 bot_prefix = config["prefix"]
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END DEFINITIONS & IMPORTS]
 
+
 def getURLs(string):
     return re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', string)
+
 
 def ytCrawl(url):
     global playlistURLs
@@ -95,7 +97,8 @@ def ytCrawl(url):
 
             playlistURLs.append('https://www.youtube.com/' + watchSection[:yPL_amp])
             if not str('https://www.youtube.com/' + watchSection[:yPL_amp]) in playlistURLs:
-                playlistURLs.append(str('https://www.youtube.com/' + watchSection[:yPL_amp]))
+                playlistURLs.append(
+                    str('https://www.youtube.com/' + watchSection[:yPL_amp]))
 
     return playlistURLs
 
@@ -108,6 +111,7 @@ def containsAny(textToCheck: str, texts):
             return len(text)
     return False
 
+
 async def sendRuntime(message: object):
     global initTime
     global initTimeSession
@@ -115,7 +119,7 @@ async def sendRuntime(message: object):
     timeDeltaSession = (rn - initTimeSession)
     timeDelta = (rn - initTime)
 
-    await message.channel.send("this discord session runtime: " + str(timeDeltaSession) + "\ncinnamon runtime: " + str(timeDelta))
+    await message.channel.send(f"this discord session runtime: {str(timeDeltaSession)} \ncinnamon runtime: {str(timeDelta)}")
 
 
 async def handleSimpleResponses(message):
@@ -143,12 +147,8 @@ async def handleSimpleResponses(message):
 
 
 async def rickRoll(message: object):
-    await message.channel.send("""We're no strangers to love \nYou know the rules and so do I \nA full commitment's what I'm thinking of \nYou wouldn't get this from any other guy\nI just want to tell you how I'm feeling \nGotta make you understand""")
-    await message.channel.send("""Never gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you""")
-    await message.channel.send("""We've known each other for so long \nYour heart's been aching but you're too shy to say it \nInside we both know what's been going on \nWe know the game and we're gonna play it\nAnd if you ask me how I'm feeling \nDon't tell me you're too blind to see""")
-    await message.channel.send("""Never gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you\n\nNever gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you""")
-    await message.channel.send("""We've known each other for so long \nYour heart's been aching but you're too shy to say it \nInside we both know what's been going on \nWe know the game and we're gonna play it""")
-    await message.channel.send("""I just want to tell you how I'm feeling \nGotta make you understand\nNever gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you""")
+    for i in range(6):
+        await message.channel.send(strings["rickroll"]["texts"][i])
 
 
 async def handlePrompts(message: object):
@@ -157,20 +157,20 @@ async def handlePrompts(message: object):
 
     await handleSimpleResponses(message)
 
-    if containsAny(messageContent, ["cinnamon, be silenced", "good night", "kys"]):
+    if containsAny(messageContent, strings["sleepTexts"]["any"]):
         # prompts that make cinnamon go away
         if "cinnamon, be silenced" in messageContent.lower():
             await message.channel.send("Hai!")
             Nope = 5
-        if containsAny(messageContent, ["good night, cinnamon", "good night cinnamon"]):
+        if containsAny(messageContent, strings["sleepTexts"]["goodNight"]):
             await message.channel.send("Jyaa ne!! ***bows***")
             Nope = 50
-        if containsAny(messageContent, ["cinnamon, kys", "cinnamon kys", "kys cinnamon", "kys, cinnamon"]):
+        if containsAny(messageContent, strings["sleepTexts"]["kys"]):
             await message.channel.send("a'k!")  # Sequential art, scarlet
             Nope = 5000
 
-    if containsAny(messageContent, ["cinnamon, say", "cinnamon, say"]):
-        startChar = containsAny(messageContent, ["cinnamon, say", "cinnamon, say"]) + 1
+    if containsAny(messageContent, ["cinnamon, say", "cinnamon say"]):
+        startChar = containsAny(messageContent, ["cinnamon, say", "cinnamon say"]) + 1
         await message.delete()
         await message.channel.send((messageContent[startChar:len(messageContent)]))
 
@@ -188,15 +188,40 @@ async def handlePrompts(message: object):
         await rickRoll(message)
 
     if "cinnamon, lovecalc" in messageContent.lower():
-        embed = discord.Embed(title="**:heart: Love calculation for " + messageContent.split(" ")[2] + " and " + messageContent.split(" ")[3] + "**:", description="Percentage: {}%".format(((int((str(re.sub('[^0123456789abcdefghijklmnopqrstuvwxyz ]', '', messageContent, 36))).split(" ")[2], 36) + int((str(re.sub('[^0123456789abcdefghijklmnopqrstuvwxyz ]', '', messageContent, 36))).split(" ")[3], 36)) % 101)), color=0xff7979)
+        # every line of this before embed.set_footer used to be a single line.
+        # the singular line had two unnecessary and identical re.match calls.
+        # the singular line utilized base 36 in 3 separate places, which change nothing about how it functioned.
+        # the singular line fucked my dog and ate my wife.
+        # I don't know what I was doing there.
+        # I don't think I ever knew what I was doing there.
+
+        words = messageContent.split(" ")
+        embedTitle = f"**:heart: Love calculation for {words[2]} and {words[3]}**:"
+
+        # trim <@> from tags before XORing their ID's
+        firstUserID = int(words[2][2:-1])
+        secondUserID = int(words[3][2:-1])
+        embedDesc = f"Percentage: {(firstUserID ^ secondUserID) % 101}%"
+
+        embed = discord.Embed(
+            title=embedTitle,
+            description=embedDesc,
+            color=0xff7979
+        )
         embed.set_footer(text="(don't take this seriously, you can bang anyone (with consent))")
+
         await message.channel.send(embed=embed)
 
     if "cinnamon, ping" in messageContent.lower():
         t1 = time.perf_counter()
         await client.send_typing(message.channel)
         t2 = time.perf_counter()
-        embed = discord.Embed(title=None, description='Ping: {}ms'.format(round((t2 - t1) * 1000)), color=0x2874A6)
+
+        embed = discord.Embed(
+            title=None,
+            description=f'Ping: {round((t2 - t1) * 1000)}ms',
+            color=0x2874A6
+        )
         await message.channel.send(embed=embed)
 
     if "cinnamon, runtime" in messageContent.lower():
@@ -204,7 +229,7 @@ async def handlePrompts(message: object):
 
     if "cinnamon, eval(" in messageContent.lower() or "/solve " in messageContent.lower():
         if containsAny(messageContent, badEvalWords):
-            await message.channel.send("fuck you.")
+            await message.channel.send("fuck you. (noticed bad keywords in eval)")
         else:
             myCharOffset = [15, 1]
             if "cinnamon, eval(" in messageContent.lower():
@@ -212,10 +237,13 @@ async def handlePrompts(message: object):
             else:
                 myCharOffset = [7, 0]
 
+            evalResult = None
             try:
-                await message.channel.send(eval(messageContent[myCharOffset[0]:len(messageContent) - myCharOffset[1]]))
-            except:
-                await message.channel.send("snake said no")
+                evalResult = eval(messageContent[myCharOffset[0]:len(messageContent) - myCharOffset[1]])
+            except Exception:
+                evalResult = "snake said no (python couldn't resolve eval)"
+
+            await message.channel.send(evalResult)
         messageContent = ""
 
     if "ytplaylist" in messageContent.lower():
@@ -223,13 +251,15 @@ async def handlePrompts(message: object):
         try:
             await message.channel.send("idk why you would want this, it's kind of a debug function, but sure")
             await message.channel.send(ytCrawl("".join(getURLs(messageContent)[0])))
-        except:
+        except Exception:
             await message.channel.send("failed to send URLs, were there too many URLs in the playlist to send? Char limit is 2000")
 
     if "roll " in messageContent.lower():
         startOfRollText = messageContent.lower().find("roll ")
         rollCommandText = messageContent.lower()[startOfRollText:len(messageContent.lower())]
-        await cinDice.roll(rollCommandText, message)
+
+        response = cinDice.roll(rollCommandText, message)
+        await message.channel.send(response)
 
     if "lewdsign" in messageContent.lower() or "lewd sign" in messageContent.lower() or "lewd_sign" in messageContent.lower():
         await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\lewdSign\\") + str(random.randint(0, 13)) + ".png"))))
@@ -281,7 +311,7 @@ class Main:
     async def on_ready():
         global initTimeSession
 
-        print("\n\n\n\n\nLogin Successful!\nName:", client.user.name, "\nID:", client.user.id)
+        print(f"\n\n\n\n\nLogin Successful!\nName: {client.user.name} \nID: {client.user.id}")
         print("Discord.py version:", discord.__version__, "\nCinnamon version:", cinnamonVersion)
         print("\n\n\n\n\n")
         initTimeSession = datetime.now().replace(microsecond=0)
@@ -289,32 +319,34 @@ class Main:
 
     @client.event
     async def on_server_join(guild):
-        await client.send_message(guild, "Hiya! you seem to have added me to your guild! Thanks for that! ~<3")
+        await client.send_message(guild, "Hiya! you seem to have added me to your server! Thanks for that! ~<3")
         await client.send_message(guild, "try typing !>help for an in depth list of all the things I can do!")
 
     @client.event
     async def on_error(self, event):
-        print("I oopsie whoopsied! I fucko boingoed!")
+        print(strings["errors"]["misc"])
         warning(traceback.format_exc())
         print(event)
         try:
             message = event[0]
-            await message.channel.send("I messed up. I'll won't better next time, and I'm not sorry. Also u r suck. You like that, don't you?")
-        except:
-            print("I.. I messed up telling discord people I messed up....")
+            await message.channel.send(strings["errors"]["miscDisc"])
+        except Exception:
+            print(strings["errors"]["failedToSendErr"])
 
     @client.event
     async def on_message(message):
         global messageContent
-        global prevMessage  # previous message get!
-        messageContent = message.content  # I don't want to type message.content 5000 times
+        global prevMessage
+        messageContent = message.content
 
-        if messageContent.startswith(bot_prefix):  # If command (still within on_message)
+        # If command (still within on_message)
+        if messageContent.startswith(bot_prefix):
             await handleCommand(message)
-        else: # If not command (commands aren't really used anymore, but they are still supported)
+        else:  # If not command (commands aren't really used anymore, but they are still supported)
             await handleRegularMessage(message)
 
-        prevMessage = message  # store this message if I ever have any function that requires the use of 2 messages back
+        # store this message if I ever have any function that requires the use of 2 messages back
+        prevMessage = message
 
 
 loop = asyncio.get_event_loop()

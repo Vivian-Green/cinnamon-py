@@ -12,7 +12,7 @@ def getRollsAndDice(command):
         rolls = rolls[0]
         rolls = rolls[0:-1]
 
-    #extract die from command
+    # extract die from command
     die = re.findall(r'd\d+', command)
     if len(die) == 0:
         die = "20"
@@ -21,14 +21,16 @@ def getRollsAndDice(command):
         die = die[1:]
 
     # rolled 0D20 or 1D0 or something like that
-    if int(rolls) < 1: rolls = "1"
-    if int(die) < 1: die = "1"
+    if int(rolls) < 1:
+        rolls = "1"
+    if int(die) < 1:
+        die = "1"
 
     # return [rolls, die] as int[]
     return [int(rolls), int(die)]
 
 
-async def roll(command: str, message):
+def roll(command: str, message):
     advantage = 0
     results = []
 
@@ -52,7 +54,8 @@ async def roll(command: str, message):
             response = response + "roll " + str(i+1) + ": "
 
         # generate 2 random rolls,
-        rng = [math.floor(random.random()*die), math.floor(random.random()*die)]
+        rng = [math.floor(random.random()*die),
+               math.floor(random.random()*die)]
         if die != 10:
             # add 1 to non-d10 rolls,
             rng = [rng[0]+1, rng[1]+1]
@@ -75,4 +78,4 @@ async def roll(command: str, message):
         response = response + "\nmin: " + str(min(results))
         response = response + "\nmax: " + str(max(results))
 
-    await message.channel.send(response)
+    return response

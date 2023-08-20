@@ -2,6 +2,10 @@
 version numbers here are from local dev branch, and not all are reflected on github history.
 </br></br></br>
 
+# changes in 2.4.1:
+- added strings.json config
+- more refactoring for readibility & some pep8 stuff
+
 # changes in 2.4.0:
 - moved dice and logging related functions to cinDice.py and cinLogging.py respectively
 - slight refactor on top of that

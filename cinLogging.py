@@ -8,6 +8,7 @@ import discord
 def loadConfig(name: str):
     return json.load(open(os.path.join(os.path.dirname(__file__), str("configs\\" + name))))
 
+
 config = loadConfig("config.json")
 
 defaultLoggingHtml = ""
@@ -16,14 +17,14 @@ with open(os.path.join(os.path.dirname(__file__), config["defaultLoggingHtml"]),
     defaultLoggingHtmlFile.close()
 
 
-
-
 def getURLs(string):
     return re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', string)
+
 
 def hexToRGBA(hexValue, alpha):
     h = tuple(int(hexValue.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
     return "rgba(" + str(h[0]) + ", " + str(h[1]) + ", " + str(h[2]) + ", " + str(alpha) + ")"
+
 
 async def appendToLog(message: object, logFolderPath: str):
     # writes message to log file AND console
@@ -43,11 +44,13 @@ async def appendToLog(message: object, logFolderPath: str):
     if message.author.bot:
         print(f'    >>>CINNAMON: {messageContent}\n')
         try:
-            file.write(f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />CINNAMON (bot): {messageContent}<br /></p>')
+            file.write(
+                f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />CINNAMON (bot): {messageContent}<br /></p>')
         except:
             file.write(f'{regularTextHTMLHeader}>{timestamp}<br /><br />CINNAMON (bot): FAILED TO LOG MESSAGE, MAY CONTAIN UNICODE CHARACTERS THAT I DON\'T WANT TO FIX AT THIS TIME<br /></p>')
     else:
-        file.write(f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />{author_name}: {messageContent}<br /></p>')
+        file.write(
+            f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />{author_name}: {messageContent}<br /></p>')
         print(f'    {author_name}: {messageContent}\n')
 
     for attachment in message.attachments:
@@ -76,18 +79,19 @@ async def appendToLog(message: object, logFolderPath: str):
             file.write(f'\n{indentedLoggingCSSHeader} style="background-color: {color}"><img src="{file_url}" alt="{file_url}" class="embeddedImage" style="max-height: 50%; height: auto; loading="lazy""></p>')
         else:
             # add clickable link into log
-            file.write(r'<a href="' + file_url + r'" style="background-color: rgba(150, 200, 255, 0.2);">' + file_url + '</a>')
+            file.write(r'<a href="' + file_url +
+                       r'" style="background-color: rgba(150, 200, 255, 0.2);">' + file_url + '</a>')
 
     file.write("\n")
     file.close()
-
 
 
 async def tryToLog(message: object):
     messageContent = message.content
     global defaultLoggingHtml
 
-    logFolderPath = os.path.join(os.path.dirname(__file__), str("logs\\" + str(message.guild)))
+    logFolderPath = os.path.join(os.path.dirname(
+        __file__), str("logs\\" + str(message.guild)))
     logFilePath = str(logFolderPath + "\\" + str(message.channel) + '.html')
 
     # ensure file exists before trying
@@ -104,7 +108,6 @@ async def tryToLog(message: object):
 
         logFile.close()
 
-    print("  " + str(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())))  # print current time
+    # print current time
+    print("  " + str(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())))
     await appendToLog(message, logFolderPath)
-
-
