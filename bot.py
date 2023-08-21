@@ -201,7 +201,7 @@ async def handlePrompts(message: object):
         # trim <@> from tags before XORing their ID's
         firstUserID = int(words[2][2:-1])
         secondUserID = int(words[3][2:-1])
-        embedDesc = f"Percentage: {(firstUserID ^ secondUserID) % 101}%"
+        embedDesc = f"Percentage: {(firstUserID + secondUserID) % 101}%"
 
         embed = discord.Embed(
             title=embedTitle,
