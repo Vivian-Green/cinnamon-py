@@ -5,6 +5,7 @@
 	"badEvalWords": [
 		"()",
 		"{",
+		"[",
 		"import",
 		"exit",
 		"(0)",
