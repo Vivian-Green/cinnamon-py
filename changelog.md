@@ -3,24 +3,24 @@ version numbers here are from local dev branch, and not all are reflected on git
 </br></br></br>
 
 # changes in 2.5.0:
-- things here aren't fully implemented. This version is being pushed for history's sake & is not stable
+- things here aren't fully implemented. This version is being pushed for history's sake & is not stable\n
 
-- strings can no longer be injected into \/solve. seriously do not run this bot on a public server lol.
+- strings can no longer be injected into \/solve. seriously do not run this bot on a public server lol.\n
 
 - new feature: Admin guild. certain things are locked behind whether a server is manually set as the admin guild for this instance of cinnamon in the config.
-- added !>dox, which sends the bot's public IP address. if the command is sent in the admin guild.
+- added !>dox, which sends the bot's public IP address. if the command is sent in the admin guild.\n
 
 - some support for launching a minecraft server remotely added. This is still very rough.
 - !>minecraft help
 - !>minecraft start
-- !>minecraft command <command> (still unfinished)
+- !>minecraft command <command> (still unfinished)\n
 
 - added reminders with relative time syntax (eg: !>remindme 4h20m check oven for burnt pizza)
-- added version command
+- added version command\n
 
-- edited logging palette, added dict for palette
+- edited logging palette, added dict for palette\n
 
-- even more more refactoring
+- even more more refactoring\n
 
 # changes in 2.4.1:
 - added strings.json config
