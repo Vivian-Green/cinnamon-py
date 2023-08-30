@@ -10,6 +10,12 @@ def loadConfig(name: str):
 
 
 config = loadConfig("config.json")
+cinPalette = {
+    "regular": "\033[38:5:182m",
+    "header": "\033[38:5:170m",
+    "misc": "\033[37m",
+    "highlighted": "\033[38:5:139m"
+}
 
 defaultLoggingHtml = ""
 with open(os.path.join(os.path.dirname(__file__), config["defaultLoggingHtml"]), "r") as defaultLoggingHtmlFile:
@@ -42,7 +48,7 @@ async def appendToLog(message: object, logFolderPath: str):
     indentedLoggingCSSHeader = '<p class="indentedText"'
 
     if message.author.bot:
-        print(f'    >>>CINNAMON: {messageContent}\n')
+        print(f'    {cinPalette["header"]}>>>CINNAMON:{cinPalette["misc"]} {messageContent}\n')
         try:
             file.write(
                 f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />CINNAMON (bot): {messageContent}<br /></p>')
@@ -51,7 +57,7 @@ async def appendToLog(message: object, logFolderPath: str):
     else:
         file.write(
             f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />{author_name}: {messageContent}<br /></p>')
-        print(f'    {author_name}: {messageContent}\n')
+        print(f'    {cinPalette["header"]}{author_name}:{cinPalette["regular"]} {messageContent}\n')
 
     for attachment in message.attachments:
         if attachment.url not in messageContent and attachment.url not in attachments:
@@ -109,5 +115,5 @@ async def tryToLog(message: object):
         logFile.close()
 
     # print current time
-    print("  " + str(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())))
+    print(f'  {cinPalette["header"]}{str(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()))}{cinPalette["regular"]}')
     await appendToLog(message, logFolderPath)

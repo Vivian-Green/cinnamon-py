@@ -1,5 +1,6 @@
 {
 	"prefix": "!>",
+	"adminGuild": 419668441012633602,
 	"defaultLoggingHtml": "assets\\defaultLoggingHTML.html",
 	"badEvalWords": [
 		"()",
@@ -31,6 +32,10 @@
 		"lambda",
 		"type",
 		"key",
-		"token"
+		"token",
+		"'",
+		"\"",
+		"`",
+		"eval"
 	]
 }

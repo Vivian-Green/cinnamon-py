@@ -1,5 +1,5 @@
-# Cinnamon bot v2.4.1 for discord, written by Viv, last update Aug 20, 2023 (create strings.json and more refactoring)
-cinnamonVersion = "2.4.1"
+# Cinnamon bot v2.5.0 for discord, written by Viv, last update Aug 30, 2023 (minecraft, log colors, doxxing, admin server speficiation, better handling of string configs, & reminders)
+cinnamonVersion = "2.5.0"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
@@ -8,9 +8,21 @@ description = "Multi-purpose bot that does basically anything I could think of"
 #      - Once you somehow gotten this file and invited the bot to your server, if for some reason it is not nicknamed "cinnamon", fix that, as some commands are otherwise recursive
 # todo: make "cinnamon, cat" work
 
+cinPalette = {
+    "regular": "\033[38:5:182m",
+    "header": "\033[38:5:170m",
+    "misc": "\033[0m \033[37m",
+    "highlighted": "\033[0m \033[38:5:39m"
+}
+
+
+
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[START DEFINITIONS & IMPORTS]
 
+import platform
+
 import os
+os.system("color")
 import os.path
 import json
 
@@ -26,6 +38,7 @@ from datetime import datetime
 import asyncio
 import discord
 import discord.ext
+from discord.ext import commands, tasks
 
 import random
 import re
@@ -33,9 +46,19 @@ import re
 import cinDice
 import cinLogging # logging import changed to only import warning to prevent confusion here
 
+import subprocess
+import sys
+
+import math
+
+
 
 def loadConfig(name: str):
+    # todo: DRY
     return json.load(open(os.path.join(os.path.dirname(__file__), str("configs\\" + name))))
+
+def loadCache(name: str):
+    return json.load(open(os.path.join(os.path.dirname(__file__), str("cache\\" + name))))
 
 
 client = discord.Client(intents=discord.Intents.all())
@@ -48,16 +71,155 @@ initTime = datetime.now().replace(microsecond=0)
 initTimeSession = datetime.now().replace(microsecond=0)
 Nope = 0
 
+
+cinMcFolder = os.path.join(os.path.dirname(__file__), str("minecraft\\"))
+mcServer = None
+
+
+
+
+# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END DEFINITIONS & IMPORTS]
+# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[START CONFIG]
+
+
 simpleResponses = loadConfig("simpleResponses.json")
 
 config = loadConfig("config.json")
 token = loadConfig("token.json")["token"]
 strings = loadConfig("strings.json")
-badEvalWords = config["badEvalWords"]
+minecraftConfig = loadConfig("minecraft.json")
+
+reminders = loadCache("reminders.json")
+
 bot_prefix = config["prefix"]
+badEvalWords = config["badEvalWords"]
+adminGuild = config["adminGuild"]
 
-# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END DEFINITIONS & IMPORTS]
+def joinWithGlobalVars(textsToJoin):
+    # todo: unsure if you can modify v directly in `for v in table:` in python, figure that out & apply here if relevant
+    for i in range(len(textsToJoin)):
+        if textsToJoin[i] in globals():
+            textsToJoin[i] = globals()[textsToJoin[i]]
+    return "".join(textsToJoin)
 
+
+#pre-processes any relevant configs
+def processConfigs():
+    strings['help']['guildIsNotAdminGuildMsg'] = joinWithGlobalVars(strings['help']['guildIsNotAdminGuildMsg'])
+processConfigs()
+
+
+# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END CONFIG]
+# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[START REMINDME]
+def overwriteCache(name: str, newData):
+    
+    thisCachePath = os.path.join(os.path.dirname(__file__), str("cache\\" + name))
+
+    os.remove(thisCachePath)
+    with open(thisCachePath, 'w') as f:
+        json.dump(newData, f, indent=4)
+
+    
+    #with open(thisCachePath, 'r+') as f:
+     #   f.seek(0)  # <--- should reset file position to the beginning.
+     #   json.dump(newData, f, indent=4)
+     #   f.truncate()
+
+def relativeTimeToSeconds(relativeTimes):
+    minuteInSeconds = 60
+    hourInSeconds = minuteInSeconds*60
+    dayInSeconds = hourInSeconds*24
+    weekInSeconds = dayInSeconds*7
+    monthInSeconds = dayInSeconds*30.4 #todo: be smarter than this
+    yearInSeconds = dayInSeconds*365
+
+    totalRelativeTime = 0
+    for v in relativeTimes:
+        timeFlavor = v[-1]#the letter specifying which type of time unit is being specified
+        timeUnitsStr = v[0:-1]
+        print(timeUnitsStr)
+        print(timeFlavor)
+        timeUnits = int(timeUnitsStr)
+        if timeFlavor == "s":
+            print(timeUnitsStr+" seconds")
+            totalRelativeTime += timeUnits
+        elif timeFlavor == "m":
+            print(timeUnitsStr+" minutes")
+            totalRelativeTime += timeUnits * minuteInSeconds
+        elif timeFlavor == "h":
+            print(timeUnitsStr+" hours")
+            totalRelativeTime += timeUnits * hourInSeconds
+        elif timeFlavor == "d":
+            print(timeUnitsStr+" days")
+            totalRelativeTime += timeUnits * dayInSeconds
+        elif timeFlavor == "w":
+            print(timeUnitsStr+" weeks")
+            totalRelativeTime += timeUnits * weekInSeconds
+        elif timeFlavor == "y":
+            print(timeUnitsStr+" years")
+            totalRelativeTime += timeUnits * yearInSeconds
+
+    print(totalRelativeTime)
+    return totalRelativeTime
+def getTimeAndReminderText(args):
+    reminderText = ""
+
+    relativeSyntaxRegex = re.compile(r"([\d]+[hdmsMyY])")
+    relativeTimesWithIndices = relativeSyntaxRegex.finditer(args[0])
+    relativeTimes = []
+    for v in relativeTimesWithIndices:
+        relativeTimes.append(v.group())
+
+    print(relativeTimes)
+
+    if len(relativeTimes) > 0:
+        totalRelativeTime = relativeTimeToSeconds(relativeTimes)
+        if len(args) > 1:
+            reminderText = " ".join(args[1:])
+    else:
+        print("len(relativeTimes) <= 0")
+
+    return [totalRelativeTime, reminderText]
+
+def newReminder(args, message):
+    thisReminder = {}
+    thisReminder["userID"] = message.author.id
+    timeAndReminderText = getTimeAndReminderText(args)
+
+    thisTime = int(time.time() + timeAndReminderText[0])
+    thisReminder["text"] = timeAndReminderText[1]
+    thisReminder["channelID"] = message.channel.id
+
+    reminders[str(thisTime)] = thisReminder
+    overwriteCache("reminders.json", reminders)
+
+async def handleReminders():
+    checkingTime = time.time() + 1  # check 1 second ahead bc ping
+    closestReminderTime = 999999999999
+
+    keysToRemove = []
+
+    for key in reminders:
+        thisReminderTime = int(key)
+        if thisReminderTime < checkingTime:
+            # remind
+
+            keysToRemove.append(key)
+            thisReminder = reminders[key]
+
+            channel = client.get_channel(thisReminder["channelID"])
+            messageText = f'Yo <@{thisReminder["userID"]}> you asked me to remind you about some kinda "{thisReminder["text"]}" right about now.. or whatever that means'
+            await channel.send(messageText)
+        elif thisReminderTime-checkingTime < closestReminderTime:
+            closestReminderTime = thisReminderTime-checkingTime
+
+    if len(keysToRemove) > 0:
+        for v in keysToRemove:
+            del reminders[v]
+        overwriteCache("reminders.json", reminders)
+    print(f"next reminder is in {math.floor(closestReminderTime/60)} minutes {math.floor(closestReminderTime%60)} seconds")
+
+# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END REMINDME]
 
 def getURLs(string):
     return re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', string)
@@ -154,6 +316,7 @@ async def rickRoll(message: object):
 async def handlePrompts(message: object):
     global Nope
     global messageContent
+    isFromAdminGuild = adminGuild == message.guild.id
 
     await handleSimpleResponses(message)
 
@@ -265,6 +428,7 @@ async def handlePrompts(message: object):
         await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\lewdSign\\") + str(random.randint(0, 13)) + ".png"))))
 
 
+
 async def handleRegularMessage(message: object):
     global messageContent
     global Nope
@@ -284,38 +448,92 @@ async def handleRegularMessage(message: object):
             await message.channel.send("'mornin'!")
             Nope = 0
 
-
 async def handleCommand(message: object):
     global messageContent
+    global mcServer
+    isFromAdminGuild = adminGuild == message.guild.id
+    words = messageContent.lower().split(" ")
 
-    print("  " + str(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())))
-    print("    !!>" + message.author.display_name + ": " + messageContent + "\n")
+    # todo: move this to logging module
+    print(f"  {cinPalette['header']}{str(time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime()))}")
+    print(f"    !!>{message.author.display_name}: {cinPalette['highlighted']}{messageContent}\n")
 
     # commands that can't be processed by discord's command api, because it is crap (as of 5 years ago, I have not checked this since). Oh, wait, it's all the commands. huh.
-    if messageContent.lower().startswith(bot_prefix+"help"):
+    # todo: switch case this bish
+    if words[0] == bot_prefix+"help":
         await message.channel.send("https://htmlpreview.github.io/?https://github.com/Vivian-Green/cinnamon-py/blob/main/assets/Cinnamon%20Bot%20Help.html")
         # await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\Cinnamon Bot Help.html")))))
-    if messageContent.lower().startswith(bot_prefix+"getlog"):
+    if words[0] == bot_prefix+"getlog":
         await message.author.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("logs\\" + str(message.guild) + "\\")) + str(message.channel) + '.html')))
         await message.channel.send("Check your DM's!")
-    if messageContent.lower().startswith(bot_prefix+"test"):
+    if words[0] == bot_prefix+"test":
         await message.channel.send("Hey, you're not a doofus! Good job, you!")
-    if messageContent.lower().startswith(bot_prefix+"goodbot"):
+    if words[0] == bot_prefix+"goodbot":
         await message.channel.send(("Arigatogozaimasu, " + message.author.display_name + "-sama! >.<"))
-    if messageContent.lower().startswith(bot_prefix+"runtime"):
+
+    if words[0] == bot_prefix+"runtime":
         await sendRuntime(message)
+
+    if words[0] == bot_prefix+"remindme":
+        newReminder(words[1:], message)
+        await message.channel.send("I'll remind you of... that... then... yeah.")
+
+
+    if words[0] == bot_prefix+"guildid":
+        await message.channel.send(f"this guild: {str(message.guild.id)}\nadmin guild: {adminGuild}")
+
+    if words[0] == bot_prefix+"dox":
+        if isFromAdminGuild:
+            ip = get('https://api.ipify.org').content.decode('utf8')
+            await message.channel.send(f"My public IP address is: {ip}")
+        else:
+            await message.channel.send(strings['help']['guildIsNotAdminGuildMsg'])
+            
+    if words[0] == bot_prefix+"version":
+        await message.channel.send(f"cinnamon: {cinnamonVersion}\ndiscord: {discord.__version__}\npython: {platform.python_version()}")
+
+    #words is messageContent.lower().split(" ")
+    if words[0] == bot_prefix+"minecraft":
+        if words[1] == "help":
+            await message.channel.send("current server: dev")
+
+        if words[1] == "start":
+            if mcServer:
+                await message.channel.send("Server already started!")
+                print("Server already started.")
+            else:
+                await message.channel.send("starting server...")
+                # todo: add args to config
+                mcServerBatch = f"""java -Xms2G -Xmx2G -XX:+UseG1GC -jar "{minecraftConfig['devServerPath']}\spigot.jar" nogui"""
+                print(mcServerBatch)
+
+                os.chdir(minecraftConfig["devServerPath"])
+                mcServer = subprocess.Popen(mcServerBatch, stdin=asyncio.subprocess.PIPE)#, stdout=subprocess.PIPE)
+                print("Server started.")
+
+        if words[1] == "command":
+            mcCommand = "".join(words[2:])
+            if mcServer is not None:
+                stdout, stderr = await mcServer.communicate(f"{mcCommand}\n".encode())
+                print(f"stdin: `{mcCommand}\n`")
+            else:
+                await message.channel.send("mcServer is None")
+                # todo: err of mc server isn't started
 
 
 class Main:
     @client.event
     async def on_ready():
+
         global initTimeSession
 
-        print(f"\n\n\n\n\nLogin Successful!\nName: {client.user.name} \nID: {client.user.id}")
-        print("Discord.py version:", discord.__version__, "\nCinnamon version:", cinnamonVersion)
+        print(f"\n\n\n\n\n{cinPalette['highlighted']}Login Successful!{cinPalette['header'] + ''} \n  Name:{cinPalette['highlighted'] + ''}{client.user.name} \n{cinPalette['header'] + ''}  ID: {cinPalette['highlighted']}{client.user.id}")
+        print(cinPalette['header'], " Discord.py version:", cinPalette['highlighted'], discord.__version__, cinPalette['header'], "\n  Cinnamon version:", cinPalette['highlighted'], cinnamonVersion)
         print("\n\n\n\n\n")
         initTimeSession = datetime.now().replace(microsecond=0)
         await client.change_presence(activity=discord.Game('Call me cinnamon'))
+
+        mainLoop.start()
 
     @client.event
     async def on_server_join(guild):
@@ -349,6 +567,40 @@ class Main:
         prevMessage = message
 
 
-loop = asyncio.get_event_loop()
+async def mcLoop():
+    if mcServer is not None:
+
+        if mcServer.stdout is None:
+            print("mcServer.stdout is None")
+        else:
+            # why does this stop the OTHER thread - the one handling the discord bot - from running??? they're separate threads-
+            for line in mcServer.stdout:
+                print(line)
+                await asyncio.sleep(0.1)  # duct tape to break for other thread - does not work after mc finishes printing
+    else:
+        print("mcServer is None")
+
+@tasks.loop(seconds = 5)
+async def mainLoop():
+
+    debugSettings = {
+        "doMcLoop": True,
+        "doReminders": True
+    }
+    # started after client on_ready event
+    if debugSettings["doMcLoop"]:
+        await mcLoop()
+    if debugSettings["doReminders"]:
+        #todo: use event structure for this instead of taping things to a loop
+        
+        await handleReminders()
 
 client.run(token)
+
+#asyncio.run(mainLoop())
+#asyncio.run(discordLoop())
+
+#print("starting cinnamon:")
+#client.run(token)
+
+

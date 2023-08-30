@@ -1,24 +1,31 @@
 {
-  "rickroll": {
-    "desc": "list containing lyrics to Rick Astley's hit song, Never Gonna Give You Up",
-    "texts": [
-      "We're no strangers to love \nYou know the rules and so do I \nA full commitment's what I'm thinking of \nYou wouldn't get this from any other guy\nI just want to tell you how I'm feeling \nGotta make you understand",
-      "Never gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you",
-      "We've known each other for so long \nYour heart's been aching but you're too shy to say it \nInside we both know what's been going on \nWe know the game and we're gonna play it\nAnd if you ask me how I'm feeling \nDon't tell me you're too blind to see",
-      "Never gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you\n\nNever gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you",
-      "We've known each other for so long \nYour heart's been aching but you're too shy to say it \nInside we both know what's been going on \nWe know the game and we're gonna play it",
-      "I just want to tell you how I'm feeling \nGotta make you understand\nNever gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you"
-    ]
-  },
-  "errors": {
-    "misc": "I oopsie whoopsied! I fucko boingoed!",
-    "miscDisc": "I messed up. I'll won't better next time, and I'm not sorry. Also u r suck. You like that, don't you?",
-    "failedToSendErr": "I.. I messed up telling discord people I messed up...."
-  },
-  "sleepTexts": {
-    "any": ["cinnamon, be silenced", "good night", "kys"],
-    "goodNight": ["good night, cinnamon", "good night cinnamon"],
-    "kys": ["cinnamon, kys", "cinnamon kys", "kys cinnamon", "kys, cinnamon"]
-  }
+	"errors": {
+		"misc": "I oopsie whoopsied! I fucko boingoed!",
+		"miscDisc": "I messed up. I'll won't better next time, and I'm not sorry. Also u r suck. You like that, don't you?",
+		"failedToSendErr": "I.. I messed up telling discord people I messed up...."
+	},
+	"help": {
+		"guildIsNotAdminGuildMsg": [
+			"This guild ID is not the admin guild ID! \nIf you are hosting cinnamon, use `",
+			"bot_prefix",
+			"guildID` to see your guild ID, and set it in configs/config.json: adminGuild"
+		]
+	},
+	"rickroll": {
+		"desc": "list containing lyrics to Rick Astley's hit song, Never Gonna Give You Up",
+		"texts": [
+			"We're no strangers to love \nYou know the rules and so do I \nA full commitment's what I'm thinking of \nYou wouldn't get this from any other guy\nI just want to tell you how I'm feeling \nGotta make you understand",
+			"Never gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you",
+			"We've known each other for so long \nYour heart's been aching but you're too shy to say it \nInside we both know what's been going on \nWe know the game and we're gonna play it\nAnd if you ask me how I'm feeling \nDon't tell me you're too blind to see",
+			"Never gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you\n\nNever gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you",
+			"We've known each other for so long \nYour heart's been aching but you're too shy to say it \nInside we both know what's been going on \nWe know the game and we're gonna play it",
+			"I just want to tell you how I'm feeling \nGotta make you understand\nNever gonna give you up, never gonna let you down \nNever gonna run around and desert you \nNever gonna make you cry, never gonna say goodbye \nNever gonna tell a lie and hurt you"
+		]
+	},
+	"sleepTexts": {
+		"any": ["cinnamon, be silenced", "good night", "kys"],
+		"goodNight": ["good night, cinnamon", "good night cinnamon"],
+		"kys": ["cinnamon, kys", "cinnamon kys", "kys cinnamon", "kys, cinnamon"]
+	}
 }
 
