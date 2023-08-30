@@ -409,7 +409,7 @@ async def handlePrompts(message: object):
             # check if eval contains bad words OR parenthesis with only whitespace
             containsBadParenthesis = re.findall(badParenthesisRegex, textToEval)
             containsBadWords = containsAny(textToEval, badEvalWords)
-            containsBadWords = containsBadWords or containsEmptyParenthesis
+            containsBadWords = containsBadWords or containsBadParenthesis
         
             if containsBadWords:
                 await message.channel.send("fuck you. (noticed bad keywords in eval)")
