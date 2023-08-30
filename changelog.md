@@ -7,7 +7,7 @@ version numbers here are from local dev branch, and not all are reflected on git
 - hotfix to lock /solve behind admin guild
 
 # changes in 2.5.0:
-- things here aren't fully implemented. This version is being pushed for history's sake & is not stable
+things here aren't fully implemented. This version is being pushed for history's sake & is not stable
 - strings can no longer be injected into \/solve. seriously do not run this bot on a public server lol.
 - new feature: Admin guild. certain things are locked behind whether a server is manually set as the admin guild for this instance of cinnamon in the config.
   - added !>dox, which sends the bot's public IP address. if the command is sent in the admin guild.
@@ -109,3 +109,4 @@ version numbers here are from local dev branch, and not all are reflected on git
 - removed inDev, nsfw, chatmod, config
 - removed background task
 - removed many unused variables
+- added changelog
