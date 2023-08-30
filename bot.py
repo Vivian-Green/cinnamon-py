@@ -1,5 +1,5 @@
-# Cinnamon bot v2.5.2 for discord, written by Viv, last update Aug 30, 2023 (hotfix to make /solve slightly less insecure)
-cinnamonVersion = "2.5.2"
+# Cinnamon bot v2.5.3 for discord, written by Viv, last update Aug 30, 2023 (hotfix to make /solve slightly less insecure)
+cinnamonVersion = "2.5.3"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
@@ -399,8 +399,13 @@ async def handlePrompts(message: object):
                 myCharOffset = [7, 0]
             
             textToEval = messageContent[myCharOffset[0]:len(messageContent) - myCharOffset[1]]
+            
+            # check if eval contains bad words OR parenthesis with only whitespace
+            containsEmptyParenthesis = re.findall(r"\([\t \n]*\)", textToEval)
+            containsBadWords = containsAny(textToEval, badEvalWords)
+            containsBadWords = containsBadWords or containsEmptyParenthesis
         
-            if containsAny(textToEval, badEvalWords):
+            if containsBadWords:
                 await message.channel.send("fuck you. (noticed bad keywords in eval)")
             else:
 

@@ -2,6 +2,9 @@
 version numbers here are from local dev branch, and not all are reflected on github history.
 </br></br></br>
 
+# changes in 2.5.2:
+- hotfix to make /solve slightly less insecure
+
 # changes in 2.5.1:
 - hotfix to actually let "cinnamon, eval" function (eval keyword was blocked)
 - hotfix to lock /solve behind admin guild
