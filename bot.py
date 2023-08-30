@@ -1,5 +1,5 @@
-# Cinnamon bot v2.5.2 for discord, written by Viv, last update Aug 30, 2023 (hotfix to make /solve slightly less insecure)
-cinnamonVersion = "2.5.2"
+# Cinnamon bot v2.5.3 for discord, written by Viv, last update Aug 30, 2023 (hotfix to make /solve slightly less insecure)
+cinnamonVersion = "2.5.3"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
@@ -80,7 +80,7 @@ relativeTimeRegex = r"([\d]+[hdmsMyY])"
 urlRegex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
 youtubeUrlRegex = r'watch\?v=\S+?list='
 
-badParenthesisRegex = r"\([ \t\n\d]*\)"
+badParenthesisRegex = r"\(([ \t\n])*(-)*([ \t\n\d])*\)" #catches parenthesis that are empty, or contain only a number, including negative numbers
 
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END DEFINITIONS & IMPORTS]
