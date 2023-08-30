@@ -1,5 +1,5 @@
-# Cinnamon bot v2.5.1 for discord, written by Viv, last update Aug 30, 2023 (hotfix to actually let "cinnamon, eval" function (eval keyword was blocked), hotfix to lock /solve behind admin guild)
-cinnamonVersion = "2.5.1"
+# Cinnamon bot v2.5.2 for discord, written by Viv, last update Aug 30, 2023 (hotfix to make /solve slightly less insecure)
+cinnamonVersion = "2.5.2"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
