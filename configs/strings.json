@@ -8,7 +8,7 @@
 		"guildIsNotAdminGuildMsg": [
 			"This guild ID is not the admin guild ID! \nIf you are hosting cinnamon, use `",
 			"bot_prefix",
-			"guildID` to see your guild ID, and set it in configs/config.json: adminGuild"
+			"guildID` to see your guild ID, and set it in configs/config.json: adminGuild. DO NOT add people you don't trust do your admin guild! Access to /solve and !>dox can cause problems, that I do not intend to fix. They're locked behind the admin guild for a reason."
 		]
 	},
 	"rickroll": {
