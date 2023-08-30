@@ -1,5 +1,5 @@
-# Cinnamon bot v2.5.0 for discord, written by Viv, last update Aug 30, 2023 (minecraft, log colors, doxxing, admin server speficiation, better handling of string configs, & reminders)
-cinnamonVersion = "2.5.0"
+# Cinnamon bot v2.5.1 for discord, written by Viv, last update Aug 30, 2023 (hotfix to actually let "cinnamon, eval" function (eval keyword was blocked), hotfix to lock /solve behind admin guild)
+cinnamonVersion = "2.5.1"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
@@ -391,23 +391,29 @@ async def handlePrompts(message: object):
         await sendRuntime(message)
 
     if "cinnamon, eval(" in messageContent.lower() or "/solve " in messageContent.lower():
-        if containsAny(messageContent, badEvalWords):
-            await message.channel.send("fuck you. (noticed bad keywords in eval)")
-        else:
+        if isFromAdminGuild:
             myCharOffset = [15, 1]
             if "cinnamon, eval(" in messageContent.lower():
                 myCharOffset = [15, 1]
             else:
                 myCharOffset = [7, 0]
+            
+            textToEval = messageContent[myCharOffset[0]:len(messageContent) - myCharOffset[1]]
+        
+            if containsAny(textToEval, badEvalWords):
+                await message.channel.send("fuck you. (noticed bad keywords in eval)")
+            else:
 
-            evalResult = None
-            try:
-                evalResult = eval(messageContent[myCharOffset[0]:len(messageContent) - myCharOffset[1]])
-            except Exception:
-                evalResult = "snake said no (python couldn't resolve eval)"
+                evalResult = None
+                try:
+                    evalResult = eval(textToEval)
+                except Exception:
+                    evalResult = "snake said no (python couldn't resolve eval)"
 
-            await message.channel.send(evalResult)
-        messageContent = ""
+                await message.channel.send(evalResult)
+            messageContent = ""
+        else:
+            await message.channel.send(strings['help']['guildIsNotAdminGuildMsg'])
 
     if "ytplaylist" in messageContent.lower():
         print(messageContent)
