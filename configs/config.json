@@ -41,6 +41,7 @@
 		"global",
 		"local",
 		"chr",
-		"str"
+		"str",
+		"var"
 	]
 }

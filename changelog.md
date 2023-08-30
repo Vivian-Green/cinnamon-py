@@ -2,6 +2,10 @@
 version numbers here are from local dev branch, and not all are reflected on github history.
 </br></br></br>
 
+# changes in 2.5.3:
+- moved all regex definitions to the header
+- another hotfix to make /solve slightly less insecure
+
 # changes in 2.5.2:
 - hotfix to make /solve slightly less insecure
 

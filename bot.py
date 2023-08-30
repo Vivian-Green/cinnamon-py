@@ -1,5 +1,5 @@
-# Cinnamon bot v2.5.3 for discord, written by Viv, last update Aug 30, 2023 (hotfix to make /solve slightly less insecure)
-cinnamonVersion = "2.5.3"
+# Cinnamon bot v2.5.2 for discord, written by Viv, last update Aug 30, 2023 (hotfix to make /solve slightly less insecure)
+cinnamonVersion = "2.5.2"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
@@ -76,6 +76,11 @@ cinMcFolder = os.path.join(os.path.dirname(__file__), str("minecraft\\"))
 mcServer = None
 
 
+relativeTimeRegex = r"([\d]+[hdmsMyY])"
+urlRegex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+youtubeUrlRegex = r'watch\?v=\S+?list='
+
+badParenthesisRegex = r"\([ \t\n\d]*\)"
 
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END DEFINITIONS & IMPORTS]
@@ -161,10 +166,11 @@ def relativeTimeToSeconds(relativeTimes):
 
     print(totalRelativeTime)
     return totalRelativeTime
+    
 def getTimeAndReminderText(args):
     reminderText = ""
 
-    relativeSyntaxRegex = re.compile(r"([\d]+[hdmsMyY])")
+    relativeSyntaxRegex = re.compile(relativeTimeRegex)
     relativeTimesWithIndices = relativeSyntaxRegex.finditer(args[0])
     relativeTimes = []
     for v in relativeTimesWithIndices:
@@ -222,7 +228,7 @@ async def handleReminders():
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END REMINDME]
 
 def getURLs(string):
-    return re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', string)
+    return re.findall(urlRegex, string)
 
 
 def ytCrawl(url):
@@ -242,7 +248,7 @@ def ytCrawl(url):
 
         # regexString matches for everything after & including the "watch" section of every URL, but ONLY if the end of the URL contains the link to the playlist.
         # EG: 'watch\?v=\S+?list=PLjaVZb8USBJOZkP-6swJPBsat8T34NlLa'
-        regexString = re.compile(r'watch\?v=\S+?list=' + playlistID)
+        regexString = re.compile(youtubeUrlRegex + playlistID)
         allLinkWatchSections = re.findall(regexString, strYTube)
 
         if not allLinkWatchSections:
@@ -401,7 +407,7 @@ async def handlePrompts(message: object):
             textToEval = messageContent[myCharOffset[0]:len(messageContent) - myCharOffset[1]]
             
             # check if eval contains bad words OR parenthesis with only whitespace
-            containsEmptyParenthesis = re.findall(r"\([\t \n]*\)", textToEval)
+            containsBadParenthesis = re.findall(badParenthesisRegex, textToEval)
             containsBadWords = containsAny(textToEval, badEvalWords)
             containsBadWords = containsBadWords or containsEmptyParenthesis
         
