@@ -2,9 +2,8 @@
 	"errors": {
 		"misc": "I oopsie whoopsied! I fucko boingoed!",
 		"miscDisc": "I messed up. I'll won't better next time, and I'm not sorry. Also u r suck. You like that, don't you?",
-		"failedToSendErr": "I.. I messed up telling discord people I messed up...."
-	},
-	"help": {
+		"failedToSendErr": "I.. I messed up telling discord people I messed up....",
+		"failedToGetIPErr": "Failed to get public IP from api.ipify.org. This is probably a network error, maybe try again later.",
 		"guildIsNotAdminGuildMsg": [
 			"This guild ID is not the admin guild ID! \nIf you are hosting cinnamon, use `",
 			"bot_prefix",

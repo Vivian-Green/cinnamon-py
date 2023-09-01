@@ -2,6 +2,21 @@
 version numbers here are from local dev branch, and not all are reflected on github history.
 </br></br></br>
 
+# changes in 2.5.4:
+- bug fixes:
+  - handleSimpleResponses no longer forms a response for every possible simple prompt, for every message, regardless of whether it contains a prompt. Whoops.
+  - conversation starters no longer read their file every time one is chosen. Whoops.
+  - pinging cinnamon now works with discord.py rewrite syntax. This has been broken for several years.
+  - messageContent is no longer global, to prevent race conditions
+- getting cinnamon's ping is now bound to !>ping
+- cinnamon now updates its status to its last online time
+- removed unused code:
+  - youtube crawler
+  - cat prompt (literally did not function)
+  - test command (overlap with !>ping)
+- minecraft related code temporarily disabled for stability
+- way more refactoring
+
 # changes in 2.5.3:
 - moved all regex definitions to the header
 - another hotfix to make /solve slightly less insecure

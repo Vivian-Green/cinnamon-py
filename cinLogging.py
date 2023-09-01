@@ -1,15 +1,12 @@
+# handles logging functions
+
 import os
-import re
 import time
-import json
 import discord
 
+from cinIO import config
+from cinShared import *
 
-def loadConfig(name: str):
-    return json.load(open(os.path.join(os.path.dirname(__file__), str("configs\\" + name))))
-
-
-config = loadConfig("config.json")
 cinPalette = {
     "regular": "\033[38:5:182m",
     "header": "\033[38:5:170m",
@@ -17,7 +14,6 @@ cinPalette = {
     "highlighted": "\033[38:5:139m"
 }
 
-defaultLoggingHtml = ""
 with open(os.path.join(os.path.dirname(__file__), config["defaultLoggingHtml"]), "r") as defaultLoggingHtmlFile:
     defaultLoggingHtml = defaultLoggingHtmlFile.readlines()
     defaultLoggingHtmlFile.close()
@@ -32,7 +28,7 @@ def hexToRGBA(hexValue, alpha):
     return "rgba(" + str(h[0]) + ", " + str(h[1]) + ", " + str(h[2]) + ", " + str(alpha) + ")"
 
 
-async def appendToLog(message: object, logFolderPath: str):
+async def appendToLog(message: discord.message, logFolderPath: str):
     # writes message to log file AND console
     messageContent = message.content
 
@@ -53,7 +49,7 @@ async def appendToLog(message: object, logFolderPath: str):
             file.write(
                 f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />CINNAMON (bot): {messageContent}<br /></p>')
         except:
-            file.write(f'{regularTextHTMLHeader}>{timestamp}<br /><br />CINNAMON (bot): FAILED TO LOG MESSAGE, MAY CONTAIN UNICODE CHARACTERS THAT I DON\'T WANT TO FIX AT THIS TIME<br /></p>')
+            file.write(f'{regularTextHTMLHeader}>{timestamp}<br /><br />CINNAMON (bot): FAILED TO LOG MESSAGE<br /></p>')
     else:
         file.write(
             f'{regularTextHTMLHeader} style="background-color: {color}">{timestamp}<br /><br />{author_name}: {messageContent}<br /></p>')
@@ -85,15 +81,13 @@ async def appendToLog(message: object, logFolderPath: str):
             file.write(f'\n{indentedLoggingCSSHeader} style="background-color: {color}"><img src="{file_url}" alt="{file_url}" class="embeddedImage" style="max-height: 50%; height: auto; loading="lazy""></p>')
         else:
             # add clickable link into log
-            file.write(r'<a href="' + file_url +
-                       r'" style="background-color: rgba(150, 200, 255, 0.2);">' + file_url + '</a>')
+            file.write(r'<a href="' + file_url + r'" style="background-color: rgba(150, 200, 255, 0.2);">' + file_url + '</a>')
 
     file.write("\n")
     file.close()
 
 
-async def tryToLog(message: object):
-    messageContent = message.content
+async def tryToLog(message: discord.message):
     global defaultLoggingHtml
 
     logFolderPath = os.path.join(os.path.dirname(

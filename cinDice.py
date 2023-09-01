@@ -1,7 +1,7 @@
 import math
 import re
 import random
-
+import discord
 
 def getRollsAndDice(command):
     # extract rolls from command
@@ -30,7 +30,7 @@ def getRollsAndDice(command):
     return [int(rolls), int(die)]
 
 
-def roll(command: str, message):
+def roll(command: str):
     advantage = 0
     results = []
 
@@ -79,3 +79,10 @@ def roll(command: str, message):
         response = response + "\nmax: " + str(max(results))
 
     return response
+
+async def rollWrapper(message: discord.message, messageContent):
+    startOfRollText = messageContent.lower().find("roll ")
+    rollCommandText = messageContent.lower()[startOfRollText:len(messageContent.lower())]
+
+    response = roll(rollCommandText)
+    await message.channel.send(response)
