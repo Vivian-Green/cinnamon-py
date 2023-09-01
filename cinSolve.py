@@ -1,13 +1,13 @@
-#tokenizer, validateAgainstWhitelist and secureEval functions in this module written by https://github.com/Koenig-Heinrich-der-4te
+# tokenizer, validateAgainstWhitelist and secureEval functions in this module written by https://github.com/Koenig-Heinrich-der-4te
 
 import math
-#this floods the namespace, I know, but this is intentional to allow expressions in /solve to not explicitly specify math.whatever()
+# this floods the namespace, I know, but this is intentional to allow expressions in /solve to not explicitly specify math.whatever()
 from math import *
 
 from cinIO import config, strings
 from cinShared import *
 
-badParenthesisRegex = r"\(([ \t\n])*(-)*([ \t\n\d])*\)" #catches parenthesis that are empty, or contain only a number, including negative numbers
+badParenthesisRegex = r"\(([ \t\n])*(-)*([ \t\n\d])*\)" # catches parenthesis that are empty, or contain only a number, including negative numbers
 
 adminGuild = config["adminGuild"]
 solveBlacklist = config["solveBlacklist"]
