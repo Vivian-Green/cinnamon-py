@@ -8,3 +8,5 @@ configs/token.json
 versions/*
 .idea/*
 __pycache__/*
+oldgraphs/*
+graphs/*

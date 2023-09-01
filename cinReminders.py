@@ -2,8 +2,9 @@ import time
 
 from cinShared import *
 
-from cinIO import reminders, overwriteCache
+from cinIO import config, reminders, overwriteCache
 
+bigNumber = config["bigNumber"]
 relativeTimeRegex = r"([\d]+[hdmsMyY])"
 
 
@@ -81,7 +82,7 @@ def newReminder(args, message):
 
 def getReminderStatus():
     checkingTime = time.time() + 1  # check 1 second ahead bc ping
-    closestReminderTime = 999999999999
+    closestReminderTime = bigNumber
 
     keysToRemove = []
     lateReminders = []

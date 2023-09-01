@@ -8,6 +8,9 @@ help page available at https://htmlpreview.github.io/?https://github.com/Vivian-
 
 see: readme.txt
 
-
-
 todo: move that over here & format it real pretty-like
+
+
+
+
+whitelist /solve implementation kindly provided by https://github.com/Koenig-Heinrich-der-4te

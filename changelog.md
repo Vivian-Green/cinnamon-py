@@ -2,6 +2,14 @@
 version numbers here are from local dev branch, and not all are reflected on github history.
 </br></br></br>
 
+# changes in 2.6.0:
+- implemented whitelist /solve code provided by https://github.com/Koenig-Heinrich-der-4te
+- removed redundant runtime prompt (now only !>runtime works)
+- "next reminder is in..." message timestamp now includes hours, and won't display if there are no reminders
+- control flow graphs properly added
+
+</br></br></br>
+
 # changes in 2.5.4:
 - bug fixes:
   - handleSimpleResponses no longer forms a response for every possible simple prompt, for every message, regardless of whether it contains a prompt. Whoops.

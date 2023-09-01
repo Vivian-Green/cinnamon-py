@@ -1,5 +1,5 @@
-# Cinnamon bot v2.5.4 for discord, written by Viv, last update Sept 1, 2023 (fixed "cinnamon, ping" (now !>ping) to work with the discord.py rewrite. status is now last known online time, move many functions to dedicated modules, remove yt functions, remove unused cat prompt, messageContent is no longer global)
-cinnamonVersion = "2.5.4"
+# Cinnamon bot v2.6.0 for discord, written by Viv, last update Sept 1, 2023 (added whitelist /solve implementation by https://github.com/Koenig-Heinrich-der-4te )
+cinnamonVersion = "2.6.0"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 # changelog in README.txt
@@ -10,9 +10,9 @@ description = "Multi-purpose bot that does basically anything I could think of"
 # todo: find mystery crash cause, re-enable minecraft features
 # todo: figure out how to get logging colors to work in console, not just in pycharm
 # todo: make reminders embeds
-# todo: make "next reminder is in..." message include hours
 # todo: rename Nope variable to something more descriptive
 # todo: make reminders cache if it doesn't exist
+# todo: move configs to yaml?
 
 cinPalette = {
     "regular": "\033[38:5:182m",
@@ -24,8 +24,6 @@ debugSettings = {
     "doMc": False,
     "doReminders": True
 }
-# seconds between loop cycles
-loopDelay = 5
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[START DEFINITIONS & IMPORTS]
 
@@ -53,7 +51,7 @@ import math
 
 import cinDice
 import cinLogging # logging import changed to only import warning to prevent confusion here
-import cinSolve
+from cinSolve import solve
 from cinShared import *
 from cinReminders import newReminder, getReminderStatus
 import cinPromptFunctions
@@ -76,8 +74,9 @@ youtubeUrlRegex = r'watch\?v=\S+?list='
 badParenthesisRegex = r"\(([ \t\n])*(-)*([ \t\n\d])*\)" #catches parenthesis that are empty, or contain only a number, including negative numbers
 
 bot_prefix = config["prefix"]
-badEvalWords = config["badEvalWords"]
 adminGuild = config["adminGuild"]
+loopDelay = config["loopDelay"]
+bigNumber = config["bigNumber"]
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END DEFINITIONS & IMPORTS]
 
@@ -128,10 +127,8 @@ async def handlePrompts(message: discord.message, messageContent):
     if containsAny(messageContent, strings["sleepTexts"]["any"]):
         await cinPromptFunctions.sleepPrompts(message, messageContent, Nope)
 
-    if "cinnamon, runtime" in messageContent.lower():
-        await sendRuntime(message)
     if "/solve " in messageContent.lower() or "cinnamon, eval(" in messageContent.lower():
-        await cinSolve.solve(message, messageContent)
+        await solve(message, messageContent)
     if "roll " in messageContent.lower():
         await cinDice.rollWrapper(message, messageContent)
     if "cinnamon, conversation starter" in messageContent.lower():
@@ -252,8 +249,9 @@ class Main:
 
         try:
             nonDiscordLoop.start()
-        except Exception:
-            print(Exception)
+        except Exception as err:
+            print(repr(err))
+            print(traceback.format_exc())
 
     @client.event
     async def on_server_join(guild):
@@ -268,8 +266,10 @@ class Main:
         try:
             message = event[0]
             await message.channel.send(strings["errors"]["miscDisc"])
-        except Exception:
+        except Exception as err:
             print(strings["errors"]["failedToSendErr"])
+            print(repr(err))
+            print(traceback.format_exc())
 
     @client.event
     async def on_message(message):
@@ -320,7 +320,12 @@ async def nonDiscordLoop():
     if debugSettings["doReminders"]:
         #todo: use event structure for this instead of taping things to a loop
         closestReminderTime = await handleReminders()
-        print(f"next reminder is in {math.floor(closestReminderTime/60)} minutes {math.floor(closestReminderTime%60)} seconds")
+        if closestReminderTime != bigNumber:
+            hours = math.floor(closestReminderTime / 3600)
+            mins = math.floor((closestReminderTime / 60) % 60)
+            secs = math.floor(closestReminderTime % 60)
+            print(f"next reminder is in {hours}h {mins}m {secs}s")
+
 
     if time.time()-lastStatusUpdateTime > (60-loopDelay/2):
         lastStatusUpdateTime = time.time()
@@ -338,6 +343,8 @@ async def nonDiscordLoop():
 
         if thisMinute < 10:
             thisMinute = "".join(["0", str(thisMinute)])
+
+        print(f"status updated at {thisHour}:{thisMinute}{amOrPm}")
         await client.change_presence(activity=discord.Game(f'online @{thisHour}:{thisMinute}{amOrPm} PST'))
 
 

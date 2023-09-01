@@ -4,6 +4,7 @@
 		"miscDisc": "I messed up. I'll won't better next time, and I'm not sorry. Also u r suck. You like that, don't you?",
 		"failedToSendErr": "I.. I messed up telling discord people I messed up....",
 		"failedToGetIPErr": "Failed to get public IP from api.ipify.org. This is probably a network error, maybe try again later.",
+		"failedToResolveEval": "snake said no (python couldn't resolve eval)",
 		"guildIsNotAdminGuildMsg": [
 			"This guild ID is not the admin guild ID! \nIf you are hosting cinnamon, use `",
 			"bot_prefix",
