@@ -2,6 +2,21 @@
 version numbers here are from local dev branch, and not all are reflected on github history.
 </br></br></br>
 
+# changes in 2.7.2:
+- move configs to yaml
+
+# changes in 2.7.1:
+- changed colors for logging
+- /solve results are now formatted to use comma separators for thousands
+
+# changes in 2.7.0:
+- cinLogging rewrite
+- print statements now use cinLogging
+- removed unnecessary debug print statements
+- added launcher (cinLauncher.py) launch with cinStart.bat
+- added !>reboot command
+- removed unnecessary class usage in bot.py (why did that need to be its own class)
+
 # changes in 2.6.0:
 - implemented whitelist /solve code provided by https://github.com/Koenig-Heinrich-der-4te
 - removed redundant runtime prompt (now only !>runtime works)

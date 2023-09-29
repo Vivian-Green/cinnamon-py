@@ -1,33 +1,44 @@
-# Cinnamon bot v2.6.0 for discord, written by Viv, last update Sept 1, 2023 (added whitelist /solve implementation by https://github.com/Koenig-Heinrich-der-4te )
-cinnamonVersion = "2.6.0"
+print("bot started")
+# Cinnamon bot v2.7.2 for discord, written by Viv, last update Sept 29, 2023 (move to yaml)
+cinnamonVersion = "2.7.2"
 description = "Multi-purpose bot that does basically anything I could think of"
+
 
 # changelog in README.txt
 # todo: this line exists in README.txt, fix that:
 #      - Once you somehow gotten this file and invited the bot to your server, if for some reason it is not nicknamed "cinnamon", fix that, as some commands are otherwise recursive
 # todo: migrate README.txt to README.md
+# todo: docstrings
 # todo: read all of this code & ensure "Cinnamon Bot Help.html" is up to date
 # todo: find mystery crash cause, re-enable minecraft features
 # todo: figure out how to get logging colors to work in console, not just in pycharm
 # todo: make reminders embeds
 # todo: rename Nope variable to something more descriptive
-# todo: make reminders cache if it doesn't exist
-# todo: move configs to yaml?
+# todo: repeating reminders?
+# todo: recomment. everything.
 
-cinPalette = {
-    "regular": "\033[38:5:182m",
-    "header": "\033[38:5:170m",
-    "misc": "\033[0m \033[37m",
-    "highlighted": "\033[0m \033[38:5:39m"
-}
 debugSettings = {
     "doMc": False,
     "doReminders": True
 }
+commandsList = [
+    "ping",
+    "dox",
+    "help",
+    "getlog",
+    "goodbot",
+    "runtime",
+    "guildid",
+    "remindme",
+    "version",
+    "minecraft",
+    "reboot"
+]
 
-# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[START DEFINITIONS & IMPORTS]
+# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[DEFINITIONS & IMPORTS]
 
 import platform
+import sys
 import os
 import os.path
 os.system("color")
@@ -50,12 +61,14 @@ import math
 
 
 import cinDice
+import cinPromptFunctions
 import cinLogging # logging import changed to only import warning to prevent confusion here
+from cinLogging import printHighlighted, printDefault, printLabelWithInfo, printErr, printDebug
 from cinSolve import solve
 from cinShared import *
 from cinReminders import newReminder, getReminderStatus
-import cinPromptFunctions
 from cinIO import config, strings, simpleResponses, minecraftConfig, token, conversationStarters
+from cinPalette import *
 
 
 
@@ -78,7 +91,7 @@ adminGuild = config["adminGuild"]
 loopDelay = config["loopDelay"]
 bigNumber = config["bigNumber"]
 
-# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[END DEFINITIONS & IMPORTS]
+# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[I DON'T KNOW WHERE TO PUT THIS]
 
 async def sendRuntime(message: discord.message):
     global initTime
@@ -89,7 +102,7 @@ async def sendRuntime(message: discord.message):
 
     await message.channel.send(f"this discord session runtime: {str(timeDeltaSession)} \ncinnamon runtime: {str(timeDelta)}")
 
-
+# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[REGULAR MESSAGE HANDLING]
 
 async def handleSimpleResponses(message, messageContent):
     for key, value in simpleResponses.items():
@@ -115,6 +128,8 @@ async def handleSimpleResponses(message, messageContent):
             await message.channel.send(response)
             break
 
+
+
 async def handlePrompts(message: discord.message, messageContent):
     global Nope
 
@@ -125,7 +140,7 @@ async def handlePrompts(message: discord.message, messageContent):
     if "cinnamon, rick roll" in messageContent.lower() or "cinnamon, rickroll" in messageContent.lower():  # Never gonna give you up!
         await cinPromptFunctions.rickRoll(message)
     if containsAny(messageContent, strings["sleepTexts"]["any"]):
-        await cinPromptFunctions.sleepPrompts(message, messageContent, Nope)
+        await cinPromptFunctions.sleepPrompts(message, Nope)
 
     if "/solve " in messageContent.lower() or "cinnamon, eval(" in messageContent.lower():
         await solve(message, messageContent)
@@ -143,8 +158,9 @@ async def handlePrompts(message: discord.message, messageContent):
         lewdSignPath = str(os.path.join(os.path.dirname(__file__), str("assets\\lewdSign\\") + str(random.randint(0, 13)) + ".png"))
         await message.channel.send(file=discord.File(lewdSignPath))
 
-async def handleRegularMessage(message: discord.message, messageContent):
+async def handleRegularMessage(message: discord.message):
     global Nope
+    messageContent = message.content
 
     await cinLogging.tryToLog(message)
     ImAwakeAndNotTalkingToABot = Nope <= 0 and not message.author.bot
@@ -161,7 +177,7 @@ async def handleRegularMessage(message: discord.message, messageContent):
             await message.channel.send("'mornin'!")
             Nope = 0
 
-
+# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[COMMAND HANDLING]
 
 async def mcCommand(message: discord.message, words):
     global mcServer
@@ -175,32 +191,38 @@ async def mcCommand(message: discord.message, words):
     if words[1] == "start":
         if mcServer:
             await message.channel.send("Server already started!")
-            print("Server already started.")
+            printHighlighted("Server already started.")
         else:
             await message.channel.send("starting server...")
             # todo: add args to config
             mcServerBatch = f"""java -Xms2G -Xmx2G -XX:+UseG1GC -jar "{minecraftConfig['devServerPath']}\spigot.jar" nogui"""
-            print(mcServerBatch)
+            printDefault(mcServerBatch)
 
             os.chdir(minecraftConfig["devServerPath"])
             mcServer = subprocess.Popen(mcServerBatch, stdin=asyncio.subprocess.PIPE)  # , stdout=subprocess.PIPE)
-            print("Server started.")
+            printHighlighted("Server started.")
 
     if words[1] == "command":
         mcCommandText = "".join(words[2:])
         if mcServer is not None:
             stdout, stderr = await mcServer.communicate(f"{mcCommandText}\n".encode())
-            print(f"stdin: `{mcCommandText}\n`")
+            printDefault(f"stdin: `{mcCommandText}\n`")
         else:
             await message.channel.send("mcServer is None")
             # todo: err if mc server isn't started
 
-async def handleCommand(message, messageContent):
+async def handleCommand(message):
+    global commandsList
     global mcServer
+    messageContent = message.content
     words = messageContent.lower().split(" ")
 
-    print(f"  {cinPalette['header']}{str(time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime()))}")
-    print(f"    !!>{message.author.display_name}: {cinPalette['highlighted']}{messageContent}\n")
+    printLabelWithInfo(time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime()))
+    printLabelWithInfo(f"  !!>{message.author.display_name}", messageContent)
+
+    if not words[0][len(bot_prefix):] in commandsList:
+        printErr("command not in commandsList")
+        return
 
     if words[0] == bot_prefix+"ping":
         await cinPromptFunctions.ping(message)
@@ -233,70 +255,70 @@ async def handleCommand(message, messageContent):
     if words[0] == bot_prefix+"minecraft":
         await mcCommand(message, words)
 
+    if words[0] == "!>reboot" and config["adminGuild"] == message.guild.id:
+        sys.exit([0])
+        
+# !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[DISCORD EVENTS]
 
-# noinspection PyTypeChecker
-class Main:
-    @client.event
-    async def on_ready():
+@client.event
+async def on_ready():
+    global initTimeSession
+    initTimeSession = datetime.now().replace(microsecond=0)
 
-        global initTimeSession
+    printHighlighted(f"{fiveLines}Login Successful!")
+    printLabelWithInfo("  Name: ", client.user.name)
+    printLabelWithInfo("  ID: ", client.user.id)
+    printLabelWithInfo("  Discord.py version: ", discord.__version__)
+    printLabelWithInfo("  Cinnamon version: ", cinnamonVersion)
+    printDefault(fiveLines)
 
-        print(f"\n\n\n\n\n{cinPalette['highlighted']}Login Successful!{cinPalette['header'] + ''} \n  Name:{cinPalette['highlighted'] + ''}{client.user.name} \n{cinPalette['header'] + ''}  ID: {cinPalette['highlighted']}{client.user.id}")
-        print(cinPalette['header'], " Discord.py version:", cinPalette['highlighted'], discord.__version__, cinPalette['header'], "\n  Cinnamon version:", cinPalette['highlighted'], cinnamonVersion)
-        print("\n\n\n\n\n")
-        initTimeSession = datetime.now().replace(microsecond=0)
-        #await client.change_presence(activity=discord.Game('Call me cinnamon'))
+    # init second thread, if it is not already running
+    try:
+        nonDiscordLoop.start()
+    except asyncio.CancelledError:
+        printErr("Non-Discord loop is already running.")
+    except Exception as err:
+        printErr(repr(err))
+        printErr(traceback.format_exc())
 
-        try:
-            nonDiscordLoop.start()
-        except Exception as err:
-            print(repr(err))
-            print(traceback.format_exc())
+@client.event
+async def on_server_join(guild):
+    # todo: does this still work though
+    await client.send_message(guild, "Hiya! you seem to have added me to your server! Thanks for that! ~<3")
+    await client.send_message(guild, "try typing !>help for an in depth list of all the things I can do!")
 
-    @client.event
-    async def on_server_join(guild):
-        await client.send_message(guild, "Hiya! you seem to have added me to your server! Thanks for that! ~<3")
-        await client.send_message(guild, "try typing !>help for an in depth list of all the things I can do!")
+@client.event
+async def on_error(self, event):
+    printErr(strings["errors"]["misc"])
+    warning(traceback.format_exc())
+    printErr(event)
+    try:
+        message = event[0]
+        await message.channel.send(strings["errors"]["miscDisc"])
+    except Exception as err:
+        printErr(strings["errors"]["failedToSendErr"])
+        printErr(repr(err))
+        printErr(traceback.format_exc())
 
-    @client.event
-    async def on_error(self, event):
-        print(strings["errors"]["misc"])
-        warning(traceback.format_exc())
-        print(event)
-        try:
-            message = event[0]
-            await message.channel.send(strings["errors"]["miscDisc"])
-        except Exception as err:
-            print(strings["errors"]["failedToSendErr"])
-            print(repr(err))
-            print(traceback.format_exc())
+@client.event
+async def on_message(message):
+    if message.content.startswith(bot_prefix):
+        await handleCommand(message)
+    else:
+        await handleRegularMessage(message)
 
-    @client.event
-    async def on_message(message):
-        messageContent = message.content
-
-        # If command (still within on_message)
-        if messageContent.startswith(bot_prefix):
-            await handleCommand(message, messageContent)
-        else:  # If not command (commands aren't really used anymore, but they are still supported)
-            await handleRegularMessage(message, messageContent)
-
-
-# noinspection PyUnresolvedReferences
 async def mcLoop():
     if mcServer is not None:
 
         if mcServer.stdout is None:
-            print("mcServer.stdout is None")
+            printErr("mcServer.stdout is None")
         else:
             # why does this stop the OTHER thread - the one handling the discord bot - from running??? they're separate threads-
             for line in mcServer.stdout:
-                print(line)
+                printDefault(line)
                 await asyncio.sleep(0.1)  # duct tape to break for other thread - does not work after mc finishes printing
     else:
-        print("mcServer is None")
-
-
+        printDefault("mcServer is None")
 
 async def handleReminders():
     closestReminderTime, lateReminders = getReminderStatus()
@@ -306,7 +328,11 @@ async def handleReminders():
         messageText = f'Yo <@{reminder["userID"]}> you asked me to remind you about some kinda "{reminder["text"]}" right about now.. or whatever that means'
         await channel.send(messageText)
 
-    return closestReminderTime
+    if closestReminderTime != bigNumber:
+        hours = math.floor(closestReminderTime / 3600)
+        mins = math.floor((closestReminderTime / 60) % 60)
+        secs = math.floor(closestReminderTime % 60)
+        printDefault(f"next reminder is in {hours}h {mins}m {secs}s")
 
 lastStatusUpdateTime = 0
 @tasks.loop(seconds = loopDelay)
@@ -319,13 +345,7 @@ async def nonDiscordLoop():
         await mcLoop()
     if debugSettings["doReminders"]:
         #todo: use event structure for this instead of taping things to a loop
-        closestReminderTime = await handleReminders()
-        if closestReminderTime != bigNumber:
-            hours = math.floor(closestReminderTime / 3600)
-            mins = math.floor((closestReminderTime / 60) % 60)
-            secs = math.floor(closestReminderTime % 60)
-            print(f"next reminder is in {hours}h {mins}m {secs}s")
-
+        await handleReminders()
 
     if time.time()-lastStatusUpdateTime > (60-loopDelay/2):
         lastStatusUpdateTime = time.time()
@@ -344,7 +364,7 @@ async def nonDiscordLoop():
         if thisMinute < 10:
             thisMinute = "".join(["0", str(thisMinute)])
 
-        print(f"status updated at {thisHour}:{thisMinute}{amOrPm}")
+        printHighlighted(f"status updated at {thisHour}:{thisMinute}{amOrPm}")
         await client.change_presence(activity=discord.Game(f'online @{thisHour}:{thisMinute}{amOrPm} PST'))
 
 

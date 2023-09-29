@@ -5,6 +5,7 @@ import discord
 from requests import get #used in dox function to get public IP
 
 from cinIO import strings, config
+from cinLogging import printErr
 from cinShared import containsAny
 
 adminGuild = config["adminGuild"]
@@ -39,7 +40,7 @@ async def dox(message: discord.message):
             ip = get('https://api.ipify.org').content.decode('utf8')
             await message.channel.send(f"My public IP address is: {ip}")
         except Exception:
-            print(Exception)
+            printErr(Exception)
             await message.channel.send(strings['errors']['failedToGetIPErr'])
     else:
         await message.channel.send(strings['errors']['guildIsNotAdminGuildMsg'])
@@ -57,7 +58,8 @@ async def ping(message):
     await message.channel.send(embed=embed)
 
 
-async def sleepPrompts(message, messageContent, Nope):
+async def sleepPrompts(message: discord.message, Nope):
+    messageContent = message.content
     # prompts that make cinnamon go away
     # returns the current value of Nope if none of the prompts are in the message
     if "cinnamon, be silenced" in messageContent.lower():

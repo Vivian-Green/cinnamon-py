@@ -4,7 +4,7 @@ configs/old/*
 configs/None/*
 assets/lewdSign/*
 assets/misc/*
-configs/token.json
+configs/token.yaml
 versions/*
 .idea/*
 __pycache__/*

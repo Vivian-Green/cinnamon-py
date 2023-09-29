@@ -1,5 +1,6 @@
 import time
 
+from cinLogging import printErr, printDefault, printDebug
 from cinShared import *
 
 from cinIO import config, reminders, overwriteCache
@@ -10,6 +11,7 @@ relativeTimeRegex = r"([\d]+[hdmsMyY])"
 
 
 def relativeTimeToSeconds(relativeTimes):
+    printDebug(relativeTimes)
     minuteInSeconds = 60
     hourInSeconds = minuteInSeconds*60
     dayInSeconds = hourInSeconds*24
@@ -20,29 +22,20 @@ def relativeTimeToSeconds(relativeTimes):
     for v in relativeTimes:
         timeFlavor = v[-1]#the letter specifying which type of time unit is being specified
         timeUnitsStr = v[0:-1]
-        print(timeUnitsStr)
-        print(timeFlavor)
         timeUnits = int(timeUnitsStr)
         if timeFlavor == "s":
-            print(timeUnitsStr+" seconds")
             totalRelativeTime += timeUnits
         elif timeFlavor == "m":
-            print(timeUnitsStr+" minutes")
             totalRelativeTime += timeUnits * minuteInSeconds
         elif timeFlavor == "h":
-            print(timeUnitsStr+" hours")
             totalRelativeTime += timeUnits * hourInSeconds
         elif timeFlavor == "d":
-            print(timeUnitsStr+" days")
             totalRelativeTime += timeUnits * dayInSeconds
         elif timeFlavor == "w":
-            print(timeUnitsStr+" weeks")
             totalRelativeTime += timeUnits * weekInSeconds
         elif timeFlavor == "y":
-            print(timeUnitsStr+" years")
             totalRelativeTime += timeUnits * yearInSeconds
 
-    print(totalRelativeTime)
     return totalRelativeTime
 
 def getTimeAndReminderText(args):
@@ -54,7 +47,7 @@ def getTimeAndReminderText(args):
     for v in relativeTimesWithIndices:
         relativeTimes.append(v.group())
 
-    print(relativeTimes)
+    printDefault(relativeTimes)
 
     totalRelativeTime = None
     if len(relativeTimes) > 0:
@@ -62,7 +55,7 @@ def getTimeAndReminderText(args):
         if len(args) > 1:
             reminderText = " ".join(args[1:])
     else:
-        print("len(relativeTimes) <= 0")
+        printErr("len(relativeTimes) <= 0")
 
     return [totalRelativeTime, reminderText]
 

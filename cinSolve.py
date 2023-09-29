@@ -5,6 +5,8 @@ import math
 from math import *
 
 from cinIO import config, strings
+from cinLogging import printHighlighted
+from cinPalette import *
 from cinShared import *
 
 badParenthesisRegex = r"\(([ \t\n])*(-)*([ \t\n\d])*\)" # catches parenthesis that are empty, or contain only a number, including negative numbers
@@ -15,9 +17,16 @@ solveWhitelist = config["solveWhitelist"]
 secureSolve = config["secureSolve"]
 
 if secureSolve:
-    print("using whitelist for /solve")
+    printHighlighted(f"{highlightedColor}using whitelist for /solve")
 else:
-    print("using (insecure) blacklist for /solve (ADMIN GUILD ONLY)")
+    printHighlighted(f"{highlightedColor}using (insecure) blacklist for /solve (ADMIN GUILD ONLY)")
+
+
+
+def formatEvalResult(value):
+    return f"{value:,}"
+    
+    
 
 tokenizer = re.compile("[\.,\(\)\*\/\+\-% ]|\d+|\w+")
 def validateAgainstWhitelist(expression):
@@ -35,7 +44,7 @@ def validateAgainstWhitelist(expression):
 def secureEval(expression):
     if validateAgainstWhitelist(expression):
         try:
-            return eval(expression, globals(), vars(math))
+            return formatEvalResult(eval(expression, globals(), vars(math)))
         except Exception:
             return strings['errors']['failedToResolveEval']
     else:
@@ -51,12 +60,13 @@ def validateAgainstBlacklist(expression):
 def insecureEval(expression):
     if validateAgainstBlacklist(expression):
         try:
-            evalResult = eval(expression)
+            evalResult = formatEvalResult(eval(expression))
         except Exception:
             evalResult = strings['errors']['failedToResolveEval']
     else:
         evalResult = "fuck you. (noticed bad keywords in eval)"
     return evalResult
+  
 
 async def solve(message, messageContent):
     # default offsets are for /solve
@@ -66,17 +76,12 @@ async def solve(message, messageContent):
 
     textToEval = messageContent[myCharOffset[0]:len(messageContent) - myCharOffset[1]]
 
-    # whitelist implementation
     if secureSolve:
-        print("secure solve!")
         response = secureEval(textToEval)
-        await message.channel.send(response)
-        return
-
-    # blacklist implementation
-    isFromAdminGuild = adminGuild == message.guild.id
-    if isFromAdminGuild:
-        response = insecureEval(textToEval)
-        await message.channel.send(response)
     else:
-        await message.channel.send(strings['errors']['guildIsNotAdminGuildMsg'])
+        if adminGuild == message.guild.id:
+            response = insecureEval(textToEval)
+        else:
+            response = strings['errors']['guildIsNotAdminGuildMsg']
+    
+    await message.channel.send(response)
