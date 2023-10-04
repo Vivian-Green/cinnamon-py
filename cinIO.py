@@ -7,6 +7,13 @@ import yaml
 cachePath = os.path.join(os.path.dirname(__file__), str("cache\\"))
 configsPath = os.path.join(os.path.dirname(__file__), str("configs\\"))
 
+def ensureDirs(dirs):
+    for directory in dirs:
+        if not os.path.isdir(directory):
+            os.makedirs(directory, exist_ok=True)
+
+ensureDirs([cachePath, configsPath])
+
 def loadConfig(fileName: str):
     filePath = os.path.join(configsPath + fileName)
     with open(filePath, 'r') as thisConfigFile:
@@ -35,11 +42,13 @@ def overwriteCache(fileName: str, newData):
 
 
 def joinWithGlobalVars(textsToJoin):
-    # todo: unsure if you can modify v directly in `for v in table:` in python, figure that out & apply here if relevant
-    for i in range(len(textsToJoin)):
-        if textsToJoin[i] in globals():
-            textsToJoin[i] = globals()[textsToJoin[i]]
-    return "".join(textsToJoin)
+    result = []
+    for text in textsToJoin:
+        if text in globals():
+            result.append(globals()[text])
+        else:
+            result.append(text)
+    return "".join(result)
 
 
 
@@ -60,4 +69,5 @@ with open(os.path.join(os.path.dirname(__file__), str("assets\\conversation star
 #pre-processes any relevant configs
 def processConfigs():
     strings['errors']['guildIsNotAdminGuildMsg'] = joinWithGlobalVars(strings['errors']['guildIsNotAdminGuildMsg'])
+
 processConfigs()

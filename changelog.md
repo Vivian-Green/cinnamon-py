@@ -4,6 +4,8 @@ version numbers here are from local dev branch, and not all are reflected on git
 
 # changes in 2.7.4:
 - empty caches are now generated if they do not exist on startup
+- config & cache dirs are now ensured on startup
+- cleaned up cinLogging
 
 # changes in 2.7.3:
 - add feature to slap prompt to specifically slap gh's bot by spoofing a face

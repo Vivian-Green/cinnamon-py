@@ -7,17 +7,16 @@ import discord
 from cinIO import config
 from cinShared import *
 from cinPalette import *
-with open(os.path.join(os.path.dirname(__file__), config["defaultLoggingHtml"]), "r") as defaultLoggingHtmlFile:
+
+defaultLoggingHTMLPath = os.path.join(os.path.dirname(__file__), config["defaultLoggingHtml"])
+with open(defaultLoggingHTMLPath, "r") as defaultLoggingHtmlFile:
     defaultLoggingHtml = defaultLoggingHtmlFile.readlines()
-    defaultLoggingHtmlFile.close()
 
 regularTextHTMLHeader = '<p class="text"'
 indentedLoggingCSSHeader = '<p class="indentedText"'
 
-
-
 def getURLs(string):
-    return re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', string)
+    return re.findall(urlRegex, string)
 
 def hexToRGBA(hexValue, alpha):
     # todo: what the fuck is this doing
@@ -41,23 +40,16 @@ def getMessageInfo(message: discord.message):
 
 def getLogFilePath(message: discord.message):
     # gets the path to the log file a given message should be in, after ensuring it exists
-    logFolderPath = os.path.join(os.path.dirname(
-        __file__), str("logs\\" + str(message.guild)))
-    logFilePath = str(logFolderPath + "\\" + str(message.channel) + '.html')
+    logFolderPath = os.path.join(os.path.dirname(__file__), str("logs\\" + str(message.guild)))
+    logFilePath = os.path.join(logFolderPath, str(message.channel) + '.html')
 
-    # ensure file exists before trying
-    if not os.path.exists(logFolderPath):
-        # make folder
-        os.makedirs(logFolderPath)
+    # ensure folder exists
+    os.makedirs(logFolderPath, exist_ok=True)
 
+    # ensure file exists
     if not os.path.isfile(logFilePath):
-        # log doesn't exist yet, make it
-        logFile = open(logFilePath, "w+")
-        for i in range(len(defaultLoggingHtml)):
-            print(defaultLoggingHtml[i])
-            logFile.write(defaultLoggingHtml[i])
-
-        logFile.close()
+        with open(logFilePath, "w+") as logFile:
+            logFile.writelines(defaultLoggingHtml)
     return logFilePath
 
 def getAttachments(message: discord.message):
@@ -68,14 +60,11 @@ def getAttachments(message: discord.message):
             attachments.append(attachment.url)
 
     # Get message.embeds, message.attachments, and urls in message.contents, and tape them together
-    embeds = str(message.embeds)
+    embeds = [str(embed.url) for embed in message.embeds]
     attachments = getURLs(str(message.attachments))
 
-    for embed in embeds:
-        attachments.append(embed)
-
-    for url in getURLs(message.content):
-        attachments.append(url)
+    attachments.extend(embeds)
+    attachments.extend(getURLs(message.content))
 
     return attachments
 
@@ -98,8 +87,7 @@ def logCinnamonMessage(message: discord.message):
     logFilePath = getLogFilePath(message)
     with open(logFilePath, 'a', encoding='utf-8') as logFile:
         try:
-            logFile.write(
-                f'{regularTextHTMLHeader} style="background-color: {messageInfo.color}">{messageInfo.timestamp}<br /><br />CINNAMON (bot): {message.content}<br /></p>')
+            logFile.write(f'{regularTextHTMLHeader} style="background-color: {messageInfo.color}">{messageInfo.timestamp}<br /><br />CINNAMON (bot): {message.content}<br /></p>')
         except Exception as err:
             #todo: log err
             logFile.write(f'{regularTextHTMLHeader}>{timestamp}<br /><br />CINNAMON (bot): FAILED TO LOG MESSAGE<br /></p>')
@@ -108,8 +96,7 @@ def logDiscordMessage(message: discord.message):
 
     logFilePath = getLogFilePath(message)
     with open(logFilePath, 'a', encoding='utf-8') as logFile:
-        logFile.write(
-            f'{regularTextHTMLHeader} style="background-color: {messageInfo.color}">{messageInfo.timestamp}<br /><br />{messageInfo.author_name}: {message.content}<br /></p>')
+        logFile.write(f'{regularTextHTMLHeader} style="background-color: {messageInfo.color}">{messageInfo.timestamp}<br /><br />{messageInfo.author_name}: {message.content}<br /></p>')
 
 def printLabelWithInfo(label, info = None):
     if info:
