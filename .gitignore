@@ -1,5 +1,6 @@
 logs/*
 old-logs/*
+cache/*
 configs/old/*
 configs/None/*
 assets/lewdSign/*

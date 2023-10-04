@@ -1,6 +1,6 @@
 print("bot started")
-# Cinnamon bot v2.7.2 for discord, written by Viv, last update Sept 29, 2023 (move to yaml)
-cinnamonVersion = "2.7.2"
+# Cinnamon bot v2.7.3 for discord, written by Viv, last update Sept 29, 2023 (add feature to slap specifically gh's bot)
+cinnamonVersion = "2.7.3"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 
@@ -91,6 +91,8 @@ adminGuild = config["adminGuild"]
 loopDelay = config["loopDelay"]
 bigNumber = config["bigNumber"]
 
+lewdiasID = "617406542521696275"
+
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[I DON'T KNOW WHERE TO PUT THIS]
 
 async def sendRuntime(message: discord.message):
@@ -135,18 +137,24 @@ async def handlePrompts(message: discord.message, messageContent):
 
     await handleSimpleResponses(message, messageContent)
 
-    if "cinnamon, lovecalc" in messageContent.lower():
+    compareText = messageContent.lower()
+    if containsAny(compareText, ["cinnamon, slap", "cinnamon slap"]):
+        await message.channel.send("***slaps***")
+        if containsAny(compareText, ["lewdie", "lewdias", lewdiasID]):
+            await message.channel.send("ow-", delete_after=2)
+
+    if "cinnamon, lovecalc" in compareText:
         await cinPromptFunctions.lovecalc(message, messageContent)
-    if "cinnamon, rick roll" in messageContent.lower() or "cinnamon, rickroll" in messageContent.lower():  # Never gonna give you up!
+    if containsAny(compareText, ["cinnamon, rick roll", "cinnamon, rickroll"]):  # Never gonna give you up!
         await cinPromptFunctions.rickRoll(message)
     if containsAny(messageContent, strings["sleepTexts"]["any"]):
         await cinPromptFunctions.sleepPrompts(message, Nope)
 
-    if "/solve " in messageContent.lower() or "cinnamon, eval(" in messageContent.lower():
+    if "/solve " in compareText or "cinnamon, eval(" in compareText:
         await solve(message, messageContent)
-    if "roll " in messageContent.lower():
+    if "roll " in compareText:
         await cinDice.rollWrapper(message, messageContent)
-    if "cinnamon, conversation starter" in messageContent.lower():
+    if "cinnamon, conversation starter" in compareText:
         await message.channel.send((conversationStarters[random.randint(0, len(conversationStarters) - 1)]))
 
     if containsAny(messageContent, ["cinnamon, say", "cinnamon say"]):

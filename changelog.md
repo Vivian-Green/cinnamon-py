@@ -2,6 +2,10 @@
 version numbers here are from local dev branch, and not all are reflected on github history.
 </br></br></br>
 
+# changes in 2.7.3:
+- add feature to slap prompt to specifically slap gh's bot by spoofing a face
+- reworked prompts to be cleaner, making better use of containsAny()
+
 # changes in 2.7.2:
 - move configs to yaml
 

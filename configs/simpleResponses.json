@@ -41,8 +41,6 @@
     "cinnamon!": ["raw", "contains", "I heard my name, have I been called? ***Nya~***"],
     "shinnamon": ["raw", "contains", "Watashi wa kiku ashita no namae. Watashi wa yoba rete imasuka? ***Nya~***"],
     "*head pats cinnamon": ["raw", "contains", "***purr~***"],
-    "cinnamon, slap": ["raw", "contains", "***slaps***"],
-    "cinnamon slap": ["raw", "contains", "***slaps***"],
     "kawaii": ["raw", "contains", "***projectile vomits sparkles***"],
     "kemonomimi": ["raw", "contains", "Somebody talking about japanese not-quite-furry trash?"],
     "nekomimi": ["raw", "contains", "Somebody talking about me?"],
