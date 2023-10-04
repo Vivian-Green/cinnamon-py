@@ -2,6 +2,9 @@
 version numbers here are from local dev branch, and not all are reflected on github history.
 </br></br></br>
 
+# changes in 2.7.4:
+- empty caches are now generated if they do not exist on startup
+
 # changes in 2.7.3:
 - add feature to slap prompt to specifically slap gh's bot by spoofing a face
 - reworked prompts to be cleaner, making better use of containsAny()

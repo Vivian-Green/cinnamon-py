@@ -19,11 +19,16 @@ def loadConfig(fileName: str):
             print(f"invalid file format for config {filePath}")
 
 def loadCache(fileName: str):
-    return json.load(open(os.path.join(cachePath + fileName)))
+    filePath = os.path.join(cachePath + fileName)
+    if os.path.isfile(filePath):
+        return json.load(open(filePath))
+    else:
+        overwriteCache(fileName, {})
 
 def overwriteCache(fileName: str, newData):
     thisCachePath = os.path.join(cachePath + fileName)
-    os.remove(thisCachePath)
+    if os.path.isfile(thisCachePath):
+        os.remove(thisCachePath)
     with open(thisCachePath, 'w') as f:
         json.dump(newData, f, indent=4)
 
