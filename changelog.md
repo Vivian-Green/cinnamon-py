@@ -19,7 +19,6 @@ version numbers here are from local dev branch, and not all are reflected on git
 - reminders can use !>reminder AND !>remindme instead of just !>remindme
 - relative times (eg: !>remindme 1h) seem to be borked rn?
 - datetimes are relative to the host for now
-- 
 </br></br></br>
 
 # changes in 2.7.4:
