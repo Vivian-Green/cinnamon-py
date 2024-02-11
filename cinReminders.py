@@ -1,5 +1,4 @@
-import datetime
-import math
+from datetime import datetime, timedelta
 import time
 import dateparser
 import discord
@@ -205,3 +204,37 @@ async def reminderMenu(message: discord.message):
         emoji_letter = chr(127462 + i)
         print(emoji_letter)
         await myMessage.add_reaction(emoji_letter)
+
+async def handleReminderMenuReaction(reaction, user):
+    i = ord(reaction.emoji) - ord('🇦')  # 0-25 for a-z regional indicators
+    staleMessageTimeDelta = timedelta(seconds=60)  # todo: move to config
+
+    messageTimezone = reaction.message.created_at.tzinfo
+    nowButAware = datetime.now(messageTimezone)
+
+    if reaction.message.created_at < nowButAware - staleMessageTimeDelta:
+        await reaction.message.edit(content="> old reminder menu, `!>reminders` to re-open")
+        return
+
+    if reaction.message.mentions[0].id != user.id:
+        await reaction.message.channel.send(f"<@{user.id}> not only would that not work, but if it did, it would delete your own reminder without telling you what it was")
+        return
+
+    # Get the corresponding reminder data
+    userID = user.id
+    myReminders = getUserReminders(userID)
+
+
+    if len(myReminders) < i + 1:
+        await reaction.message.channel.send(
+            f"Don't add your own emoji- \n`OOB err on index {i} for reminders of length {len(myReminders)}`")
+
+    # todo: understand this line
+    sortedReminders = sorted(myReminders.items(), key=lambda x: x[0])
+    reminderTime, reminderData = sortedReminders[i]
+
+    delReminderByTimestamp(reminderTime)
+
+    await reaction.message.channel.send(f"Deleted reminder at <t:{reminderTime}:F> \nTo restore the reminder, use this command: \n`!>reminder <t:{reminderTime}:F> {reminderData['text']}`")
+
+    await reaction.message.edit(content="> old reminder menu, `!>reminders` to re-open")

@@ -1,8 +1,8 @@
 import cinIO
 
 print("bot started")
-# Cinnamon bot v2.7.3 for discord, written by Viv, last update Sept 29, 2023 (add feature to slap specifically gh's bot)
-cinnamonVersion = "2.7.3"
+# Cinnamon bot v2.8.2 for discord, written by Viv, last update Feb 10, 2023 (deleting reminders)
+cinnamonVersion = "2.8.2"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 
@@ -12,16 +12,19 @@ description = "Multi-purpose bot that does basically anything I could think of"
 # todo: migrate README.txt to README.md
 # todo: read all of this code & ensure "Cinnamon Bot Help.html" is up to date
 # todo: find mystery crash cause, re-enable minecraft features
-# todo: figure out how to get logging colors to work in console, not just in pycharm
 # todo: rename Nope variable to something more descriptive
 # todo: repeating reminders?
 # todo: recomment. everything.
 
-debugSettings = {
+# todo: bug - absolute times are absolutely FUCKED
+# todo: rework time system entirely
+
+debugSettings = { # todo: what the FUCK is this doing in code
     "doMc": False,
     "doReminders": True
 }
-commandsList = [
+
+commandsList = [ # todo: what the FUCK is this doing in code
     "ping",
     "dox",
     "help",
@@ -46,13 +49,12 @@ import platform
 import sys
 import os
 import os.path
-os.system("color")
 
 from logging import warning
 import traceback
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import asyncio
 import discord
@@ -71,9 +73,11 @@ import cinLogging # logging import changed to only import warning to prevent con
 from cinLogging import printHighlighted, printDefault, printLabelWithInfo, printErr, printDebug
 from cinSolve import solve
 from cinShared import *
-from cinReminders import newReminder, getReminderStatus, reminderMenu, getUserReminders, delReminderByTimestamp
+from cinReminders import newReminder, getReminderStatus, reminderMenu, getUserReminders, delReminderByTimestamp, handleReminderMenuReaction
 from cinIO import config, strings, simpleResponses, minecraftConfig, token, conversationStarters, userData, getOrCreateUserData
 from cinPalette import *
+
+os.system("color")
 
 
 
@@ -88,8 +92,7 @@ cinMcFolder = os.path.join(os.path.dirname(__file__), str("minecraft\\"))
 mcServer = None
 
 youtubeUrlRegex = r'watch\?v=\S+?list='
-
-badParenthesisRegex = r"\(([ \t\n])*(-)*([ \t\n\d])*\)" #catches parenthesis that are empty, or contain only a number, including negative numbers
+badParenthesisRegex = r"\(([ \t\n])*(-)*([ \t\n\d])*\)" # catches parenthesis that are empty, or contain only a number, including negative numbers
 
 bot_prefix = config["prefix"]
 adminGuild = config["adminGuild"]
@@ -371,49 +374,13 @@ async def on_reaction_add(reaction, user):
     if user.bot:
         return
 
-    emoji = reaction.emoji
-
-    if not reaction.message.author.bot: # todo: specifically check if the message is from cinnamon
+    if not reaction.message.author.bot:  # todo: specifically check if the message is from cinnamon
         return
 
-    if ">'s reminders:" in reaction.message.content: # reminder menu reaction
-        index = None
+    if ">'s reminders:" in reaction.message.content:  # on user reaction to a reminder menu message sent by a bot
+        if len(reaction.emoji) == 1 and '🇦' <= reaction.emoji[0] <= '🇿': # with an alpha regional indicator emoji
+            await handleReminderMenuReaction(reaction, user)
 
-        if len(emoji) != 1 or not ('🇦' <= emoji[0] <= '🇿'):
-            return
-        # If emoji is a regional indicator (from 🇦 to 🇿), calculate the index
-        index = ord(emoji) - ord('🇦') # 0-25
-
-        messageTimezone = reaction.message.created_at.tzinfo
-        nowButAware = datetime.now(messageTimezone)
-
-        # Compare the aware datetimes
-        if reaction.message.created_at < nowButAware - timedelta(seconds=60):
-            reaction.message.channel.send("menu is too old! open !>reminders again to delete one")
-            return
-
-        if reaction.message.mentions[0].id != user.id:
-            reaction.message.channel.send(f"<@{user.id}> not only would that not work, but if it did, it would delete your own reminder without telling you what it was")
-            return
-
-        #print(index)
-
-        # Get the corresponding reminder data
-        userID = user.id
-        myReminders = getUserReminders(userID)
-
-        if len(myReminders) < index+1:
-            reaction.message.channel.send("don't add ya own got dang emoji- \n`OOB err on index " + index + " for reminders of length " + len(myReminders) + "`")
-
-        # todo: understand this line
-        sortedReminders = sorted(myReminders.items(), key=lambda x: x[0])
-        reminderTime, reminderData = sortedReminders[index]
-
-        #print(sortedReminders)
-        #print(reminderTime)
-        delReminderByTimestamp(reminderTime)
-
-        await reaction.message.channel.send(f"deleted reminder at <t:{reminderTime}:F> \nto restore the reminder, use this command: \n`!>reminder <t:{reminderTime}:F> {reminderData['text']}`")
 
 async def mcLoop():
     if mcServer is not None:

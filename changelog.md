@@ -19,6 +19,7 @@ version numbers here are from local dev branch, and not all are reflected on git
 - reminders can use !>reminder AND !>remindme instead of just !>remindme
 - relative times (eg: !>remindme 1h) seem to be borked rn?
 - datetimes are relative to the host for now
+- 
 </br></br></br>
 
 # changes in 2.7.4:
@@ -44,6 +45,8 @@ version numbers here are from local dev branch, and not all are reflected on git
 - added launcher (cinLauncher.py) launch with cinStart.bat
 - added !>reboot command
 - removed unnecessary class usage in bot.py (why did that need to be its own class)
+
+</br></br></br>
 
 # changes in 2.6.0:
 - implemented whitelist /solve code provided by https://github.com/Koenig-Heinrich-der-4te
