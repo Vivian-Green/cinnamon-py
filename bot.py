@@ -1,3 +1,5 @@
+import cinIO
+
 print("bot started")
 # Cinnamon bot v2.7.3 for discord, written by Viv, last update Sept 29, 2023 (add feature to slap specifically gh's bot)
 cinnamonVersion = "2.7.3"
@@ -8,11 +10,9 @@ description = "Multi-purpose bot that does basically anything I could think of"
 # todo: this line exists in README.txt, fix that:
 #      - Once you somehow gotten this file and invited the bot to your server, if for some reason it is not nicknamed "cinnamon", fix that, as some commands are otherwise recursive
 # todo: migrate README.txt to README.md
-# todo: docstrings
 # todo: read all of this code & ensure "Cinnamon Bot Help.html" is up to date
 # todo: find mystery crash cause, re-enable minecraft features
 # todo: figure out how to get logging colors to work in console, not just in pycharm
-# todo: make reminders embeds
 # todo: rename Nope variable to something more descriptive
 # todo: repeating reminders?
 # todo: recomment. everything.
@@ -30,9 +30,14 @@ commandsList = [
     "runtime",
     "guildid",
     "remindme",
+    "reminder",
+    "reminders",
     "version",
     "minecraft",
-    "reboot"
+    "reboot",
+    "set",
+    "get",
+    "cinloggingchannel"
 ]
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[DEFINITIONS & IMPORTS]
@@ -47,7 +52,7 @@ from logging import warning
 import traceback
 
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import asyncio
 import discord
@@ -66,8 +71,8 @@ import cinLogging # logging import changed to only import warning to prevent con
 from cinLogging import printHighlighted, printDefault, printLabelWithInfo, printErr, printDebug
 from cinSolve import solve
 from cinShared import *
-from cinReminders import newReminder, getReminderStatus
-from cinIO import config, strings, simpleResponses, minecraftConfig, token, conversationStarters
+from cinReminders import newReminder, getReminderStatus, reminderMenu, getUserReminders, delReminderByTimestamp
+from cinIO import config, strings, simpleResponses, minecraftConfig, token, conversationStarters, userData, getOrCreateUserData
 from cinPalette import *
 
 
@@ -92,6 +97,8 @@ loopDelay = config["loopDelay"]
 bigNumber = config["bigNumber"]
 
 lewdiasID = "617406542521696275"
+
+print(f"cinnamon's timezone is: {time.timezone}")
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[I DON'T KNOW WHERE TO PUT THIS]
 
@@ -187,6 +194,34 @@ async def handleRegularMessage(message: discord.message):
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[COMMAND HANDLING]
 
+async def setCommand(message: discord.message):
+    messageContent = message.content
+    words = messageContent.lower().split(" ")
+    args = words[1:]
+    print(args)
+
+    userIDStr = str(message.author.id)
+    thisUserData = getOrCreateUserData(userIDStr) # make sure it exists
+
+    if args[0] == "timezone":
+        userData[userIDStr]["timezone"] = int(args[1])
+        userTimeZone = userData[userIDStr]["timezone"]
+        await message.channel.send(f"your timezone is now {userTimeZone}")
+
+async def handleGetCommand(message: discord.message):
+    messageContent = message.content
+    words = messageContent.lower().split(" ")
+    args = words[1:]
+    print(args)
+
+    userIDStr = str(message.author.id)
+    thisUserData = getOrCreateUserData(userIDStr) # make sure it exists
+
+    # usage: !>get timezone 5
+    if args[0] == "timezone":
+        await message.channel.send(f"your timezone is: {str(userData[userIDStr]['timezone'])}")
+
+
 async def mcCommand(message: discord.message, words):
     global mcServer
 
@@ -224,6 +259,7 @@ async def handleCommand(message):
     global mcServer
     messageContent = message.content
     words = messageContent.lower().split(" ")
+    wordsCaseSensitive = messageContent.split(" ")
 
     printLabelWithInfo(time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime()))
     printLabelWithInfo(f"  !!>{message.author.display_name}", messageContent)
@@ -232,6 +268,10 @@ async def handleCommand(message):
         printErr("command not in commandsList")
         return
 
+    if words[0] == bot_prefix+"cinloggingchannel":
+        config["debugMessageChannelID"] = str(message.channel.id)
+        cinIO.writeConfig("config.yaml", config)
+        await message.channel.send("updated config")
     if words[0] == bot_prefix+"ping":
         await cinPromptFunctions.ping(message)
     if words[0] == bot_prefix+"dox":
@@ -252,9 +292,14 @@ async def handleCommand(message):
     if words[0] == bot_prefix+"guildid":
         await message.channel.send(f"this guild: {str(message.guild.id)}\nadmin guild: {adminGuild}")
 
-    if words[0] == bot_prefix+"remindme":
-        newReminder(words[1:], message)
-        await message.channel.send("I'll remind you of... that... then... yeah.")
+    if words[0] == bot_prefix+"remindme" or words[0] == bot_prefix+"reminder":
+        await newReminder(wordsCaseSensitive[1:], message)
+    if words[0] == bot_prefix + "reminders":
+        await reminderMenu(message)
+    if words[0] == bot_prefix + "set":
+        await setCommand(message)
+    if words[0] == bot_prefix + "get":
+        await handleGetCommand(message)
 
     if words[0] == bot_prefix+"version":
         await message.channel.send(f"cinnamon: {cinnamonVersion}\ndiscord: {discord.__version__}\npython: {platform.python_version()}")
@@ -289,6 +334,11 @@ async def on_ready():
         printErr(repr(err))
         printErr(traceback.format_exc())
 
+    if not (config["debugMessageChannelID"] is None):
+        print(config["debugMessageChannelID"])
+        debugMessageChannel = client.get_channel(int(config["debugMessageChannelID"]))
+        await debugMessageChannel.send("cinnamon started!")
+
 @client.event
 async def on_server_join(guild):
     # todo: does this still work though
@@ -315,6 +365,56 @@ async def on_message(message):
     else:
         await handleRegularMessage(message)
 
+
+@client.event
+async def on_reaction_add(reaction, user):
+    if user.bot:
+        return
+
+    emoji = reaction.emoji
+
+    if not reaction.message.author.bot: # todo: specifically check if the message is from cinnamon
+        return
+
+    if ">'s reminders:" in reaction.message.content: # reminder menu reaction
+        index = None
+
+        if len(emoji) != 1 or not ('🇦' <= emoji[0] <= '🇿'):
+            return
+        # If emoji is a regional indicator (from 🇦 to 🇿), calculate the index
+        index = ord(emoji) - ord('🇦') # 0-25
+
+        messageTimezone = reaction.message.created_at.tzinfo
+        nowButAware = datetime.now(messageTimezone)
+
+        # Compare the aware datetimes
+        if reaction.message.created_at < nowButAware - timedelta(seconds=60):
+            reaction.message.channel.send("menu is too old! open !>reminders again to delete one")
+            return
+
+        if reaction.message.mentions[0].id != user.id:
+            reaction.message.channel.send(f"<@{user.id}> not only would that not work, but if it did, it would delete your own reminder without telling you what it was")
+            return
+
+        #print(index)
+
+        # Get the corresponding reminder data
+        userID = user.id
+        myReminders = getUserReminders(userID)
+
+        if len(myReminders) < index+1:
+            reaction.message.channel.send("don't add ya own got dang emoji- \n`OOB err on index " + index + " for reminders of length " + len(myReminders) + "`")
+
+        # todo: understand this line
+        sortedReminders = sorted(myReminders.items(), key=lambda x: x[0])
+        reminderTime, reminderData = sortedReminders[index]
+
+        #print(sortedReminders)
+        #print(reminderTime)
+        delReminderByTimestamp(reminderTime)
+
+        await reaction.message.channel.send(f"deleted reminder at <t:{reminderTime}:F> \nto restore the reminder, use this command: \n`!>reminder <t:{reminderTime}:F> {reminderData['text']}`")
+
 async def mcLoop():
     if mcServer is not None:
 
@@ -333,7 +433,11 @@ async def handleReminders():
 
     for reminder in lateReminders:
         channel = client.get_channel(reminder["channelID"])
-        messageText = f'Yo <@{reminder["userID"]}> you asked me to remind you about some kinda "{reminder["text"]}" right about now.. or whatever that means'
+
+        if reminder["text"] != "":
+            messageText = f'<@{reminder["userID"]}> reminder: \n> {reminder["text"]}'
+        else:
+            messageText = f'<@{reminder["userID"]}> reminder: \n> {"default text :3"}'
         await channel.send(messageText)
 
     if closestReminderTime != bigNumber:

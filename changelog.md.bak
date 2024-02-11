@@ -2,12 +2,6 @@
 version numbers here are from local dev branch, and not all are reflected on github history.
 </br></br></br>
 
-# changes in 2.8.2:
-- added option to delete (and restore) reminders through the
-- !>reminders menu, which actually has one use now, through reactions
-
-- absolute times absolutely do NOT work-
-
 # changes in 2.8.1:
 - new message on cinnamon startup & reboot
 - `!>cinloggingchannel` to set this channel (globally for a given bot instance- also editable in config.yaml)
