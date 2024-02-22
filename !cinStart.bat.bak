@@ -16,31 +16,31 @@ echo [               ]
 sleep 2
 echo [2              ]
 sleep 2
-echo [.4             ]
+echo [W4             ]
 sleep 2
-echo [..6            ]
+echo [WW6            ]
 sleep 2
-echo [...8           ]
+echo [WWW8           ]
 sleep 2
-echo [...10          ]
+echo [WWW10          ]
 sleep 2
-echo [....12         ]
+echo [WWWW12         ]
 sleep 2
-echo [.....14        ]
+echo [WWWWW14        ]
 sleep 2
-echo [......16       ]
+echo [WWWWWW16       ]
 sleep 2
-echo [.......18      ]
+echo [WWWWWWW18      ]
 sleep 2
-echo [........20     ]
+echo [WWWWWWWW20     ]
 sleep 2
-echo [.........22    ]
+echo [WWWWWWWWW22    ]
 sleep 2
-echo [..........24   ]
+echo [WWWWWWWWWW24   ]
 sleep 2
-echo [...........26  ]
+echo [WWWWWWWWWWW26  ]
 sleep 2
-echo [............28 ]
+echo [WWWWWWWWWWWW28 ]
 sleep 2
-echo [.............30]
+echo [WWWWWWWWWWWWW30]
 !cinStart bat

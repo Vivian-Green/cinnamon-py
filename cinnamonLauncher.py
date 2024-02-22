@@ -4,6 +4,7 @@ import asyncio
 import discord
 import discord.ext
 import subprocess
+import time
 
 from cinIO import config, token
 
@@ -33,5 +34,5 @@ async def on_message(message: discord.message):
         await message.channel.send("rebooting...")
         startMainBot()
 
-
 client.run(token)
+
