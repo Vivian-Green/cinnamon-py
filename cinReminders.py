@@ -1,3 +1,4 @@
+import math
 from datetime import datetime, timedelta
 import time
 import dateparser
@@ -194,7 +195,40 @@ async def reminderMenu(message: discord.message):
     for reminderTime, reminderData in sortedReminders:
         emoji_letter = f":regional_indicator_{chr(97 + i)}:"
         reminderText = reminderData.get("text")
-        menuText += f"\nReminder at <t:{reminderTime}> for:\n> {emoji_letter}`    ` {reminderText}"
+        durationSeconds = int(reminderTime) - time.time()
+
+        durationWeeks = 0
+        durationDays = 0
+        durationHours = 0
+        durationMinutes = 0
+
+        if durationSeconds >= 60 * 60 * 24 * 7:
+            durationWeeks = math.floor(durationSeconds / (60 * 60 * 24 * 7))
+            durationSeconds -= durationWeeks * (60 * 60 * 24 * 7)
+
+        if durationSeconds >= 60 * 60 * 24:
+            durationDays = math.floor(durationSeconds / (60 * 60 * 24))
+            durationSeconds -= durationDays * (60 * 60 * 24)
+
+        if durationSeconds >= 60 * 60:
+            durationHours = math.floor(durationSeconds / (60 * 60))
+            durationSeconds -= durationHours * (60 * 60)
+
+        if durationSeconds >= 60:
+            durationMinutes = math.floor(durationSeconds / 60)
+            durationSeconds -= durationMinutes * 60
+
+        durationStr = ""
+        if durationWeeks > 0:
+            durationStr += f"{durationWeeks} weeks " # todo: handle week
+        if durationDays > 0:
+            durationStr += f"{durationDays} days, " # todo: handle day
+        if durationHours > 0:
+            durationStr += f"{durationHours}h"
+        if durationMinutes > 0:
+            durationStr += f"{durationMinutes}m"
+        durationStr += f"{round(durationSeconds)}s"
+        menuText += f"\nReminder at <t:{reminderTime}> (in {durationStr}) for:\n> {emoji_letter}`    ` {reminderText}"
         i += 1
     menuText += "\n\nto delete a reminder, click below:"
 
