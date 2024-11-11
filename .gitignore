@@ -11,3 +11,5 @@ versions/*
 __pycache__/*
 oldgraphs/*
 graphs/*
+*.bak
+targets_*

@@ -1,3 +1,5 @@
+import json
+import difflib
 import cinIO
 
 print("bot started")
@@ -24,7 +26,7 @@ debugSettings = { # todo: what the FUCK is this doing in code
     "doReminders": True
 }
 
-commandsList = [ # todo: what the FUCK is this doing in code
+commandsList = [ # todo: what the FUCK is this doing in code, decouple and import from modules at least?
     "ping",
     "dox",
     "help",
@@ -40,7 +42,13 @@ commandsList = [ # todo: what the FUCK is this doing in code
     "reboot",
     "set",
     "get",
-    "cinloggingchannel"
+    "cinloggingchannel",
+    "podcast",
+    "clip",
+    "setclipfile",
+    "getclips",
+    "getallclips",
+    "renderclips"
 ]
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[DEFINITIONS & IMPORTS]
@@ -65,8 +73,6 @@ import random
 import subprocess
 import math
 
-
-
 import cinDice
 import cinPromptFunctions
 import cinLogging # logging import changed to only import warning to prevent confusion here
@@ -76,6 +82,7 @@ from cinShared import *
 from cinReminders import newReminder, getReminderStatus, reminderMenu, getUserReminders, delReminderByTimestamp, handleReminderMenuReaction
 from cinIO import config, strings, simpleResponses, minecraftConfig, token, conversationStarters, userData, getOrCreateUserData
 from cinPalette import *
+from cinYoinkytModule import setclipfile, clip, getClips, getAllClips, renderClips
 
 os.system("color")
 
@@ -101,6 +108,8 @@ bigNumber = config["bigNumber"]
 
 lewdiasID = "617406542521696275"
 
+clip_file_names = ""
+
 print(f"cinnamon's timezone is: {time.timezone}")
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[I DON'T KNOW WHERE TO PUT THIS]
@@ -113,6 +122,18 @@ async def sendRuntime(message: discord.message):
     timeDelta = (rn - initTime)
 
     await message.channel.send(f"this discord session runtime: {str(timeDeltaSession)} \ncinnamon runtime: {str(timeDelta)}")
+
+
+def download_audio(video_url):
+    # download
+    command = [
+        'yt-dlp',
+        '-f', 'bestaudio[ext=mp3]/bestaudio',
+        '-o', f'yoinked.m4a',
+        '--', video_url
+    ]
+    subprocess.run(" ".join(command), check=True)
+
 
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[REGULAR MESSAGE HANDLING]
 
@@ -146,6 +167,7 @@ async def handlePrompts(message: discord.message, messageContent):
     global Nope
 
     await handleSimpleResponses(message, messageContent)
+    words = messageContent.lower().split(" ")
 
     compareText = messageContent.lower()
     if containsAny(compareText, ["cinnamon, slap", "cinnamon slap"]):
@@ -164,6 +186,8 @@ async def handlePrompts(message: discord.message, messageContent):
         await solve(message, messageContent)
     if "roll " in compareText:
         await cinDice.rollWrapper(message, messageContent)
+    if "clip" in compareText or ":" in compareText:
+        await clip(words, message)
     if "cinnamon, conversation starter" in compareText:
         await message.channel.send((conversationStarters[random.randint(0, len(conversationStarters) - 1)]))
 
@@ -257,6 +281,7 @@ async def mcCommand(message: discord.message, words):
             await message.channel.send("mcServer is None")
             # todo: err if mc server isn't started
 
+
 async def handleCommand(message):
     global commandsList
     global mcServer
@@ -267,53 +292,91 @@ async def handleCommand(message):
     printLabelWithInfo(time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime()))
     printLabelWithInfo(f"  !!>{message.author.display_name}", messageContent)
 
-    if not words[0][len(bot_prefix):] in commandsList:
+    command = words[0][len(bot_prefix):]
+
+    if command not in commandsList:
         printErr("command not in commandsList")
         return
 
-    if words[0] == bot_prefix+"cinloggingchannel":
-        config["debugMessageChannelID"] = str(message.channel.id)
-        cinIO.writeConfig("config.yaml", config)
-        await message.channel.send("updated config")
-    if words[0] == bot_prefix+"ping":
-        await cinPromptFunctions.ping(message)
-    if words[0] == bot_prefix+"dox":
-        await cinPromptFunctions.dox(message)
+    print(f"'{command}'")
 
-    if words[0] == bot_prefix+"help":
-        await message.channel.send("https://htmlpreview.github.io/?https://github.com/Vivian-Green/cinnamon-py/blob/main/assets/Cinnamon%20Bot%20Help.html")
-        # await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\Cinnamon Bot Help.html")))))
-    if words[0] == bot_prefix+"getlog":
-        await message.author.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("logs\\" + str(message.guild) + "\\")) + str(message.channel) + '.html')))
-        await message.channel.send("Check your DM's!")
+    match command:
+        case "cinloggingchannel":
+            config["debugMessageChannelID"] = str(message.channel.id)
+            cinIO.writeConfig("config.yaml", config)
+            await message.channel.send("updated config")
 
-    if words[0] == bot_prefix+"goodbot":
-        await message.channel.send(("Arigatogozaimasu, " + message.author.display_name + "-sama! >.<"))
+        case "ping":
+            await cinPromptFunctions.ping(message)
 
-    if words[0] == bot_prefix+"runtime":
-        await sendRuntime(message)
-    if words[0] == bot_prefix+"guildid":
-        await message.channel.send(f"this guild: {str(message.guild.id)}\nadmin guild: {adminGuild}")
+        case "dox":
+            await cinPromptFunctions.dox(message)
 
-    if words[0] == bot_prefix+"remindme" or words[0] == bot_prefix+"reminder":
-        await newReminder(wordsCaseSensitive[1:], message)
-    if words[0] == bot_prefix + "reminders":
-        await reminderMenu(message)
-    if words[0] == bot_prefix + "set":
-        await setCommand(message)
-    if words[0] == bot_prefix + "get":
-        await handleGetCommand(message)
+        case "help":
+            await message.channel.send("https://htmlpreview.github.io/?https://github.com/Vivian-Green/cinnamon-py/blob/main/assets/Cinnamon%20Bot%20Help.html")
+            # await message.channel.send(file=discord.File(str(os.path.join(os.path.dirname(__file__), str("assets\\Cinnamon Bot Help.html")))))
 
-    if words[0] == bot_prefix+"version":
-        await message.channel.send(f"cinnamon: {cinnamonVersion}\ndiscord: {discord.__version__}\npython: {platform.python_version()}")
+        case "getlog":
+            await message.author.send(file=discord.File(
+                os.path.join(os.path.dirname(__file__), f"logs/{str(message.guild)}/{str(message.channel)}.html")
+            ))
+            await message.channel.send("Check your DM's!")
 
-    #words is messageContent.lower().split(" ")
-    if words[0] == bot_prefix+"minecraft":
-        await mcCommand(message, words)
+        case "goodbot":
+            await message.channel.send(f"Arigatogozaimasu, {message.author.display_name}-sama! >.<")
 
-    if words[0] == "!>reboot" and config["adminGuild"] == message.guild.id:
-        sys.exit([0])
-        
+        case "runtime":
+            await sendRuntime(message)
+
+        case "guildid":
+            await message.channel.send(f"this guild: {str(message.guild.id)}\nadmin guild: {adminGuild}")
+
+        case "remindme" | "reminder":
+            await newReminder(wordsCaseSensitive[1:], message)
+
+        case "reminders":
+            await reminderMenu(message)
+
+        case "set":
+            await setCommand(message)
+
+        case "get":
+            await handleGetCommand(message)
+
+        case "version":
+            await message.channel.send(f"cinnamon: {cinnamonVersion}\ndiscord: {discord.__version__}\npython: {platform.python_version()}")
+
+        case "minecraft":
+            await mcCommand(message, words)
+
+        case "!>reboot" if config["adminGuild"] == message.guild.id:
+            sys.exit([0])
+
+        case "setclipfile":
+            await setclipfile(wordsCaseSensitive, message)
+        case "getclips":
+            await getClips(wordsCaseSensitive, message)
+        case "getallclips":
+            await getAllClips(message)
+        case "renderclips":
+            await renderClips(message)
+
+        # Default case if no command matches
+        case _:
+            printErr(f"Unknown command {command}")
+
+
+    if isinstance(message.channel, discord.DMChannel) and words[0] == "!>podcast":
+        video_url = words[1]
+        output_dir = 'downloads'
+        os.makedirs(output_dir, exist_ok=True)
+
+        try:
+            download_audio(video_url)
+            await message.channel.send(file=discord.File('yoinked.m4a'))
+        except Exception as e:
+            await message.channel.send(f"An error occurred: {str(e)}")
+
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[DISCORD EVENTS]
 
 @client.event
@@ -354,8 +417,7 @@ async def on_error(self, event):
     warning(traceback.format_exc())
     printErr(event)
     try:
-        message = event[0]
-        await message.channel.send(strings["errors"]["miscDisc"])
+        await event[0].channel.send(strings["errors"]["miscDisc"])
     except Exception as err:
         printErr(strings["errors"]["failedToSendErr"])
         printErr(repr(err))
@@ -400,12 +462,17 @@ async def handleReminders():
 
     for reminder in lateReminders:
         channel = client.get_channel(reminder["channelID"])
+        author = client.get_user(reminder["userID"])
 
         if reminder["text"] != "":
             messageText = f'<@{reminder["userID"]}> reminder: \n> {reminder["text"]}'
         else:
             messageText = f'<@{reminder["userID"]}> reminder: \n> {"default text :3"}'
-        await channel.send(messageText)
+
+        if channel:
+            await channel.send(messageText)
+        else:
+            await author.send(messageText)
 
     if closestReminderTime != bigNumber:
         hours = math.floor(closestReminderTime / 3600)
