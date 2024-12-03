@@ -66,7 +66,7 @@ def getTimeAndReminderText(message: discord.message, args):
     isRelativeTime = len(relativeTimes) > 0
 
     print(f"getTimeAndReminderText: {totalReminderTime}")
-    return [int(totalReminderTime), reminderText, isAbsoluteTime, isRelativeTime]
+    return [totalReminderTime, reminderText, isAbsoluteTime, isRelativeTime]
 
 
 
@@ -128,7 +128,7 @@ async def newReminder(args, message):
 
     if timeAndReminderText[1] == "":
         timeAndReminderText[1] = "default text :3"
-    messageText = f"Set a reminder at <t:{thisTime}> for \n> {timeAndReminderText[1]}"
+    messageText = f"Set a reminder at <t:{thisTime}> (<t:{thisTime}:R>) for \n> {timeAndReminderText[1]}"
 
     reminders[str(thisTime)] = thisReminder
     overwriteCache("reminders.json", reminders)
@@ -228,7 +228,7 @@ async def reminderMenu(message: discord.message):
         if durationMinutes > 0:
             durationStr += f"{durationMinutes}m"
         durationStr += f"{round(durationSeconds)}s"
-        menuText += f"\nReminder at <t:{reminderTime}> (in {durationStr}) for:\n> {emoji_letter}`    ` {reminderText}"
+        menuText += f"\nReminder at <t:{reminderTime}> (<t:{reminderTime}:R>) for:\n> {emoji_letter}`    ` {reminderText}"
         i += 1
     menuText += "\n\nto delete a reminder, click below:"
 
