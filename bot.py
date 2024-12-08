@@ -1,5 +1,3 @@
-import json
-import difflib
 import cinIO
 print("bot started")
 cinnamonVersion = "2.9.0"
@@ -20,7 +18,6 @@ description = "Multi-purpose bot that does basically anything I could think of"
 # todo: rework time system entirely
 
 debugSettings = { # todo: what the FUCK is this doing in code
-    "doMc": False,
     "doReminders": True
 }
 
@@ -69,7 +66,6 @@ from discord.ext import tasks
 
 import random
 import subprocess
-import math
 
 import cinDice
 import cinPromptFunctions
@@ -77,8 +73,8 @@ import cinLogging # logging import changed to only import warning to prevent con
 from cinLogging import printHighlighted, printDefault, printLabelWithInfo, printErr, printDebug
 from cinSolve import solve
 from cinShared import *
-from cinReminders import newReminder, getReminderStatus, reminderMenu, getUserReminders, delReminderByTimestamp, handleReminderReaction, checkForReminders
-from cinIO import config, strings, simpleResponses, minecraftConfig, token, conversationStarters, userData, getOrCreateUserData
+from cinReminders import newReminder, reminderMenu, handleReminderReaction, checkForReminders
+from cinIO import config, strings, simpleResponses, token, conversationStarters, userData, getOrCreateUserData
 from cinPalette import *
 from cinYoinkytModule import setclipfile, clip, getClips, getAllClips, renderClips
 
@@ -92,9 +88,6 @@ playlistURLs = []
 initTime = datetime.now().replace(microsecond=0)
 initTimeSession = datetime.now().replace(microsecond=0)
 Nope = 0
-
-cinMcFolder = os.path.join(os.path.dirname(__file__), str("minecraft\\"))
-mcServer = None
 
 youtubeUrlRegex = r'watch\?v=\S+?list='
 badParenthesisRegex = r"\(([ \t\n])*(-)*([ \t\n\d])*\)" # catches parenthesis that are empty, or contain only a number, including negative numbers
@@ -246,43 +239,8 @@ async def handleGetCommand(message: discord.message):
     if args[0] == "timezone":
         await message.channel.send(f"your timezone is: {str(userData[userIDStr]['timezone'])}")
 
-
-async def mcCommand(message: discord.message, words):
-    global mcServer
-
-    if not debugSettings["doMc"]:
-        return
-
-    if words[1] == "help":
-        await message.channel.send("current server: dev")
-
-    if words[1] == "start":
-        if mcServer:
-            await message.channel.send("Server already started!")
-            printHighlighted("Server already started.")
-        else:
-            await message.channel.send("starting server...")
-            # todo: add args to config
-            mcServerBatch = f"""java -Xms2G -Xmx2G -XX:+UseG1GC -jar "{minecraftConfig['devServerPath']}\spigot.jar" nogui"""
-            printDefault(mcServerBatch)
-
-            os.chdir(minecraftConfig["devServerPath"])
-            mcServer = subprocess.Popen(mcServerBatch, stdin=asyncio.subprocess.PIPE)  # , stdout=subprocess.PIPE)
-            printHighlighted("Server started.")
-
-    if words[1] == "command":
-        mcCommandText = "".join(words[2:])
-        if mcServer is not None:
-            stdout, stderr = await mcServer.communicate(f"{mcCommandText}\n".encode())
-            printDefault(f"stdin: `{mcCommandText}\n`")
-        else:
-            await message.channel.send("mcServer is None")
-            # todo: err if mc server isn't started
-
-
 async def handleCommand(message):
     global commandsList
-    global mcServer
     messageContent = message.content
     words = messageContent.lower().split(" ")
     wordsCaseSensitive = messageContent.split(" ")
@@ -343,9 +301,6 @@ async def handleCommand(message):
 
         case "version":
             await message.channel.send(f"cinnamon: {cinnamonVersion}\ndiscord: {discord.__version__}\npython: {platform.python_version()}")
-
-        case "minecraft":
-            await mcCommand(message, words)
 
         case "!>reboot" if config["adminGuild"] == message.guild.id:
             sys.exit([0])
@@ -440,30 +395,12 @@ async def on_reaction_add(reaction, user):
     if "reminder" in reaction.message.content.lower():
         await handleReminderReaction(reaction, user)
 
-
-async def mcLoop():
-    if mcServer is not None:
-
-        if mcServer.stdout is None:
-            printErr("mcServer.stdout is None")
-        else:
-            # why does this stop the OTHER thread - the one handling the discord bot - from running??? they're separate threads-
-            for line in mcServer.stdout:
-                printDefault(line)
-                await asyncio.sleep(0.1)  # duct tape to break for other thread - does not work after mc finishes printing
-    else:
-        printDefault("mcServer is None")
-
-
 lastStatusUpdateTime = 0
 @tasks.loop(seconds = loopDelay)
 async def nonDiscordLoop():
     global debugSettings
     global lastStatusUpdateTime
 
-    # started after client on_ready event
-    if debugSettings["doMc"]:
-        await mcLoop()
     if debugSettings["doReminders"]:
         #todo: use event structure for this instead of taping things to a loop
         await checkForReminders(client)
