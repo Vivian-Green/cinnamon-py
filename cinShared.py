@@ -14,3 +14,7 @@ def containsAny(textToCheck: str, texts):
 
 def getURLs(string):
     return re.findall(urlRegex, string)
+
+
+def stripUnicode(input_string: str) -> str:
+    return ''.join(char for char in input_string if ord(char) < 128)

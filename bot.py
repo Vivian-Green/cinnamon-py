@@ -9,7 +9,6 @@ description = "Multi-purpose bot that does basically anything I could think of"
 #      - Once you somehow gotten this file and invited the bot to your server, if for some reason it is not nicknamed "cinnamon", fix that, as some commands are otherwise recursive
 # todo: migrate README.txt to README.md
 # todo: read all of this code & ensure "Cinnamon Bot Help.html" is up to date
-# todo: find mystery crash cause, re-enable minecraft features
 # todo: rename Nope variable to something more descriptive
 # todo: repeating reminders?
 # todo: recomment. everything.

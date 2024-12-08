@@ -8,6 +8,8 @@ from cinIO import config
 from cinShared import *
 from cinPalette import *
 
+# todo: don't just strip unicode
+
 defaultLoggingHTMLPath = os.path.join(os.path.dirname(__file__), config["defaultLoggingHtml"])
 with open(defaultLoggingHTMLPath, "r") as defaultLoggingHtmlFile:
     defaultLoggingHtml = defaultLoggingHtmlFile.readlines()
@@ -15,28 +17,43 @@ with open(defaultLoggingHTMLPath, "r") as defaultLoggingHtmlFile:
 regularTextHTMLHeader = '<p class="text"'
 indentedLoggingCSSHeader = '<p class="indentedText"'
 
-def getURLs(string):
-    return re.findall(urlRegex, string)
+
+
+
 
 def hexToRGBA(hexValue, alpha):
     # todo: what the fuck is this doing
     h = tuple(int(hexValue.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
     return "rgba(" + str(h[0]) + ", " + str(h[1]) + ", " + str(h[2]) + ", " + str(alpha) + ")"
 
+
+
 # ---------- get things from message
 
 class MessageInfo:
-    def __init__(self, color, timestamp, author_name):
+    def __init__(self, color, timestamp, author_name: str, logFilePath, content: str = "", isDM: bool = False):
         self.color = color
         self.timestamp = timestamp
         self.author_name = author_name
+        self.logFilePath = logFilePath
+        self.content = content
 
+        self.isDM = isDM
+
+# todo: memoize
 def getMessageInfo(message: discord.message):
-    color = hexToRGBA(str(message.author.color), 0.5)
-    timestamp = message.created_at.strftime("%a, %d %b %Y %H:%M:%S +0000")
-    author_name = message.author.display_name
+    if not message: return None
 
-    return MessageInfo(color, timestamp, author_name)
+    try: color = hexToRGBA(str(message.author.color), 0.5)
+    except: color = "#aa44bb"
+    try: timestamp = message.created_at.strftime("%a, %d %b %Y %H:%M:%S +0000")
+    except: timestamp = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) # default to now
+    try: logFilePath = getLogFilePath(message)
+    except: logFilePath = None
+
+    return MessageInfo(color, timestamp, message.author.display_name, logFilePath, stripUnicode(message.content), message.guild is None)
+
+
 
 def getLogFilePath(message: discord.message):
     # gets the path to the log file a given message should be in, after ensuring it exists
@@ -69,34 +86,51 @@ def getAttachments(message: discord.message):
     return attachments
 
 # ---------- end get things from message
+
+
+
+
+
 # ---------- print/log message of type
 
 def printCinnamonMessage(message: discord.message):
     indentedMessageContent = message.content.replace("\n", "\n      " )
-    print(f'    {labelColor}>>>CINNAMON:\n      {labelColor}{indentedMessageContent}')
+    print(f'    {labelColor}{message.guild.id}.{message.channel.name} >>>CINNAMON:\n      {labelColor}{indentedMessageContent}')
 
 def printDiscordMessage(message: discord.message):
     indentedMessageContent = message.content.replace("\n", "\n      " )
-    messageInfo = getMessageInfo(message)
-    print(f'    {labelColor}{messageInfo.author_name}:\n      {defaultColor}{indentedMessageContent}')
+    print(f'    {labelColor}{message.guild.id}.{message.channel.name} {message.author.display_name}:\n      {defaultColor}{indentedMessageContent}')
 
 def logCinnamonMessage(message: discord.message):
     messageInfo = getMessageInfo(message)
-    timestamp = message.created_at.strftime("%a, %d %b %Y %H:%M:%S +0000")
+    with open(messageInfo.logFilePath, 'a', encoding='utf-8') as logFile:
+        logFile.write(f'{regularTextHTMLHeader} style="background-color: {messageInfo.color}">{messageInfo.timestamp}<br /><br />CINNAMON (bot): {messageInfo.content}<br /></p>')
 
-    logFilePath = getLogFilePath(message)
-    with open(logFilePath, 'a', encoding='utf-8') as logFile:
-        try:
-            logFile.write(f'{regularTextHTMLHeader} style="background-color: {messageInfo.color}">{messageInfo.timestamp}<br /><br />CINNAMON (bot): {message.content}<br /></p>')
-        except Exception as err:
-            #todo: log err
-            logFile.write(f'{regularTextHTMLHeader}>{timestamp}<br /><br />CINNAMON (bot): FAILED TO LOG MESSAGE<br /></p>')
 def logDiscordMessage(message: discord.message):
     messageInfo = getMessageInfo(message)
+    with open(messageInfo.logFilePath, 'a', encoding='utf-8') as logFile:
+        logFile.write(f'{regularTextHTMLHeader} style="background-color: {messageInfo.color}">{messageInfo.timestamp}<br /><br />{messageInfo.author_name}: {messageInfo.content}<br /></p>')
 
-    logFilePath = getLogFilePath(message)
-    with open(logFilePath, 'a', encoding='utf-8') as logFile:
-        logFile.write(f'{regularTextHTMLHeader} style="background-color: {messageInfo.color}">{messageInfo.timestamp}<br /><br />{messageInfo.author_name}: {message.content}<br /></p>')
+
+
+# ---------- end print/log message of type
+
+async def tryToLog(message: discord.message):
+    printLabelWithInfo(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()))
+
+    if message.author.bot:
+        printCinnamonMessage(message)
+        logCinnamonMessage(message)
+    else:
+        printDiscordMessage(message)
+        logDiscordMessage(message)
+        logAttachmentsFromMessage(message)
+
+# ----------
+
+
+
+# ----------
 
 def printLabelWithInfo(label, info = None):
     if info:
@@ -119,38 +153,24 @@ def logAttachmentsFromMessage(message):
     attachments = getAttachments(message)
     messageInfo = getMessageInfo(message)
 
-    # Loop through every attached file
-    logFilePath = getLogFilePath(message)
-    with open(logFilePath, 'a', encoding='utf-8') as logFile:
-        for i in range(len(attachments)):
-            file_url = attachments[i][0:-3]
-            if len(file_url) > 0:
-                printHighlighted(file_url)
+    log_entries = []
 
-                # If the attached file is an image
-                urlIsImage = ".jpg" in file_url or ".png" in file_url or ".webp" in file_url or ".gif" in file_url
-                if urlIsImage:
-                    # write html for image to log
-                    logFile.write(f'\n{indentedLoggingCSSHeader} style="background-color: {messageInfo.color}"><img src="{file_url}" alt="{file_url}" class="embeddedImage" style="max-height: 50%; height: auto; loading="lazy""></p>')
-                else:
-                    # add clickable link into log
-                    logFile.write(r'<a href="' + file_url + r'" style="background-color: rgba(150, 200, 255, 0.2);">' + file_url + '</a>')
+    for attachment in attachments:
+        file_url = attachment[0:-3]
+        if len(file_url) > 0:
+            printHighlighted(file_url)
 
-        logFile.write("\n")
+            # Determine if the attached file is an image or not
+            if any(ext in file_url for ext in [".jpg", ".png", ".webp", ".gif"]):
+                log_entries.append(
+                    f'\n{indentedLoggingCSSHeader} style="background-color: {messageInfo.color};">'
+                    f'<img src="{file_url}" alt="{file_url}" class="embeddedImage" style="max-height: 50%; height: auto;" loading="lazy">'
+                    f'</p>'
+                )
+            else:
+                log_entries.append(
+                    f'\n<a href="{file_url}" style="background-color: rgba(150, 200, 255, 0.2);">{file_url}</a>'
+                )
 
-# ---------- end print/log message of type
-
-
-async def tryToLog(message: discord.message):
-    global defaultLoggingHtml
-
-    # print current time
-    printLabelWithInfo(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()))
-
-    if message.author.bot:
-        printCinnamonMessage(message)
-        logCinnamonMessage(message)
-    else:
-        printDiscordMessage(message)
-        logDiscordMessage(message)
-        logAttachmentsFromMessage(message)
+    with open(messageInfo.logFilePath, 'a', encoding='utf-8') as logFile:
+        logFile.write(f"\n{' '.join(log_entries)}\n")
