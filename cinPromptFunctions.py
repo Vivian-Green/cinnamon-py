@@ -10,29 +10,6 @@ from cinShared import containsAny
 
 adminGuild = config["adminGuild"]
 
-async def rickRoll(message: discord.message):
-    for i in range(6):
-        await message.channel.send(strings["rickroll"]["texts"][i])
-
-
-async def lovecalc(message, messageContent):
-    words = messageContent.split(" ")
-    embedTitle = f"**:heart: Love calculation for {words[2]} and {words[3]}**:"
-
-    # trim <@> from tags before XORing their ID's
-    firstUserID = int(words[2][2:-1])
-    secondUserID = int(words[3][2:-1])
-    embedDesc = f"Percentage: {(firstUserID + secondUserID) % 101}%"
-
-    embed = discord.Embed(
-        title=embedTitle,
-        description=embedDesc,
-        color=0xff7979
-    )
-    embed.set_footer(text="(don't take this seriously, you can bang anyone (with consent))")
-
-    await message.channel.send(embed=embed)
-
 async def dox(message: discord.message):
     isFromAdminGuild = adminGuild == message.guild.id
     if isFromAdminGuild:

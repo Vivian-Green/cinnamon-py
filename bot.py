@@ -164,11 +164,6 @@ async def handlePrompts(message: discord.message, messageContent):
         await message.channel.send("***slaps***")
         if containsAny(compareText, ["lewdie", "lewdias", lewdiasID]):
             await message.channel.send("ow-", delete_after=2)
-
-    if "cinnamon, lovecalc" in compareText:
-        await cinPromptFunctions.lovecalc(message, messageContent)
-    if containsAny(compareText, ["cinnamon, rick roll", "cinnamon, rickroll"]):  # Never gonna give you up!
-        await cinPromptFunctions.rickRoll(message)
     if containsAny(messageContent, strings["sleepTexts"]["any"]):
         await cinPromptFunctions.sleepPrompts(message, Nope)
 
@@ -178,17 +173,10 @@ async def handlePrompts(message: discord.message, messageContent):
         await cinDice.rollWrapper(message, messageContent)
     if "clip" in compareText or ":" in compareText:
         await clip(words, message)
-    if "cinnamon, conversation starter" in compareText:
-        await message.channel.send((conversationStarters[random.randint(0, len(conversationStarters) - 1)]))
-
     if containsAny(messageContent, ["cinnamon, say", "cinnamon say"]):
         startChar = containsAny(messageContent, ["cinnamon, say", "cinnamon say"]) + 1
         await message.delete()
         await message.channel.send((messageContent[startChar:len(messageContent)]))
-
-    if "lewdsign" in messageContent.lower() or "lewd sign" in messageContent.lower() or "lewd_sign" in messageContent.lower():
-        lewdSignPath = str(os.path.join(os.path.dirname(__file__), str("assets\\lewdSign\\") + str(random.randint(0, 13)) + ".png"))
-        await message.channel.send(file=discord.File(lewdSignPath))
 
 async def handleRegularMessage(message: discord.message):
     global Nope
