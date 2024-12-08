@@ -1,6 +1,6 @@
 import cinIO
 print("bot started")
-cinnamonVersion = "2.9.0"
+cinnamonVersion = "2.9.1"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 
@@ -330,6 +330,33 @@ async def handleCommand(message):
         except Exception as e:
             await message.channel.send(f"An error occurred: {str(e)}")
 
+
+
+
+
+lastStatusUpdateTime = 0
+async def handleStatusUpdate():
+    global lastStatusUpdateTime
+    lastStatusUpdateTime = time.time()
+
+    # every minute, update status
+    rn = datetime.now()
+    thisHour = rn.hour
+    thisMinute = rn.minute
+    amOrPm = "am"
+    if thisHour > 12:
+        amOrPm = "pm"
+        thisHour -= 12
+    if thisHour == 0:
+        thisHour = 12
+
+    if thisMinute < 10:
+        thisMinute = "".join(["0", str(thisMinute)])
+
+    printHighlighted(f"status updated at {thisHour}:{thisMinute}{amOrPm}")
+    await client.change_presence(activity=discord.Game(f'online @{thisHour}:{thisMinute}{amOrPm} PST')) # todo: do timestamps work here?
+
+
 # !!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[DISCORD EVENTS]
 
 @client.event
@@ -395,36 +422,13 @@ async def on_reaction_add(reaction, user):
     if "reminder" in reaction.message.content.lower():
         await handleReminderReaction(reaction, user)
 
-lastStatusUpdateTime = 0
 @tasks.loop(seconds = loopDelay)
 async def nonDiscordLoop():
     global debugSettings
     global lastStatusUpdateTime
 
-    if debugSettings["doReminders"]:
-        #todo: use event structure for this instead of taping things to a loop
-        await checkForReminders(client)
+    if debugSettings["doReminders"]: await checkForReminders(client)
 
-    if time.time()-lastStatusUpdateTime > (60-loopDelay/2):
-        lastStatusUpdateTime = time.time()
-
-        #every minute, update status
-        rn = datetime.now()
-        thisHour = rn.hour
-        thisMinute = rn.minute
-        amOrPm = "am"
-        if thisHour > 12:
-            amOrPm = "pm"
-            thisHour -= 12
-        if thisHour == 0:
-            thisHour = 12
-
-        if thisMinute < 10:
-            thisMinute = "".join(["0", str(thisMinute)])
-
-        printHighlighted(f"status updated at {thisHour}:{thisMinute}{amOrPm}")
-        await client.change_presence(activity=discord.Game(f'online @{thisHour}:{thisMinute}{amOrPm} PST'))
-
-
+    if time.time() - lastStatusUpdateTime > (60 - loopDelay / 2): await handleStatusUpdate()
 
 client.run(token)
