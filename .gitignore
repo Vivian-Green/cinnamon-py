@@ -10,6 +10,6 @@ versions/*
 .idea/*
 __pycache__/*
 oldgraphs/*
-graphs/*
+graphs/*.png
 *.bak
 targets_*
