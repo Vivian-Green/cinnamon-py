@@ -5,7 +5,7 @@ import dateparser
 import discord
 
 import cinIO
-from cinLogging import printErr, printDefault, printDebug
+from cinLogging import printErr
 from cinShared import *
 
 from cinIO import config, reminders, overwriteCache, userData
@@ -116,7 +116,7 @@ async def newReminder(args, message):
 
         reminderMessage = await message.channel.send(messageText)
 
-        await reminderMessage.add_reaction("👍") # we don't care if this works, but it goes in the try/catch anyway
+        await reminderMessage.add_reaction("👉") # we don't care if this works, but it goes in the try/catch anyway
     except Exception as e:
         printErr(f"Failed to set reminder: {e}")
 
@@ -295,16 +295,20 @@ async def checkForReminders(client):
             messageText = f'{author.mention} reminder: \n> {"default text :3"}'
 
         # Send the message to the channel or direct to the author
+        recipient = author
         if channel:
+            recipient = channel
             # Mention all non-author users
             mentions = [f"<@{userID}>" for userID in reminder["userIDs"][1:]]  # Skip the author (first user)
             if len(mentions) > 0:
                 if len(mentions) > 50: mentions = mentions[:49]  # todo: fix magic 50 user cap for this. Shouldn't be hit, but like, magic.
                 messageText += "\n\n-# " + " ".join(mentions)  # Append non-author mentions
-
-            await channel.send(messageText)
         else:
-            await author.send(messageText)
+            messageText += "react to snooze for 20m"
+
+        message = await recipient.send(messageText)
+
+        await message.add_reaction("👉")
 
 async def handleReminderReaction(reaction, user):
     if not (reaction and reaction.message): return
@@ -346,3 +350,14 @@ async def handleReminderReaction(reaction, user):
 
         await message.channel.send(f"{user.mention}, you've been {addedOrRemoved} from the reminder!")
         overwriteCache("reminders.json", reminders)
+    elif "snooze" in lowerContent: # todo: options for 15m, 30m, 1h.
+        # find line starting with "> ", get everything after the second character
+        # make a reminder for this, for half an hour from now
+        reminderText = "default text :3"
+        for line in message.content.splitlines():
+            if line.startswith("> "):
+                reminderText = line[2:].strip()  # Get text after "> " and strip whitespace
+                break
+
+        args = ["!>reminder", "20m", f"yo. \n{reminderText}"]
+        await newReminder(args, message)

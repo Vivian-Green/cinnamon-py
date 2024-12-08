@@ -8,8 +8,6 @@ import time
 cachePath = os.path.join(os.path.dirname(__file__), str("cache\\"))
 configsPath = os.path.join(os.path.dirname(__file__), str("configs\\"))
 
-
-
 def ensureDirs(dirs):
     for directory in dirs:
         if not os.path.isdir(directory):
@@ -69,17 +67,17 @@ def joinWithGlobalVars(textsToJoin):
 token = loadConfig("token.yaml")["token"]
 config = loadConfig("config.yaml")
 strings = loadConfig("strings.yaml")
-minecraftConfig = loadConfig("minecraft.yaml")
 
 simpleResponses = loadConfig("simpleResponses.json")
-
 reminders = loadCache("reminders.json")
 userData = loadCache("userData.json")
 
 with open(os.path.join(os.path.dirname(__file__), str("assets\\conversation starters.txt")), "r") as file:
     conversationStarters = file.readlines()
 
-
+defaultLoggingHtmlPath = os.path.join(os.path.dirname(__file__), config["defaultLoggingHtml"])
+with open(defaultLoggingHtmlPath, "r") as defaultLoggingHtmlFile:
+    defaultLoggingHtml = defaultLoggingHtmlFile.readlines()
 
 #pre-processes any relevant configs
 def processConfigs():

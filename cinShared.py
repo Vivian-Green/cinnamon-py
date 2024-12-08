@@ -18,3 +18,11 @@ def getURLs(string):
 
 def stripUnicode(input_string: str) -> str:
     return ''.join(char for char in input_string if ord(char) < 128)
+
+
+def hexToRGBA(hexValue, alpha):
+    # todo: what the fuck is this doing
+    h = tuple(int(hexValue.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
+    return "rgba(" + str(h[0]) + ", " + str(h[1]) + ", " + str(h[2]) + ", " + str(alpha) + ")"
+
+
