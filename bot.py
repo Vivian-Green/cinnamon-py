@@ -1,10 +1,8 @@
 import json
 import difflib
 import cinIO
-
 print("bot started")
-# Cinnamon bot v2.8.2 for discord, written by Viv, last update Feb 10, 2023 (deleting reminders)
-cinnamonVersion = "2.8.2"
+cinnamonVersion = "2.9.0"
 description = "Multi-purpose bot that does basically anything I could think of"
 
 
@@ -79,7 +77,7 @@ import cinLogging # logging import changed to only import warning to prevent con
 from cinLogging import printHighlighted, printDefault, printLabelWithInfo, printErr, printDebug
 from cinSolve import solve
 from cinShared import *
-from cinReminders import newReminder, getReminderStatus, reminderMenu, getUserReminders, delReminderByTimestamp, handleReminderMenuReaction
+from cinReminders import newReminder, getReminderStatus, reminderMenu, getUserReminders, delReminderByTimestamp, handleReminderReaction, checkForReminders
 from cinIO import config, strings, simpleResponses, minecraftConfig, token, conversationStarters, userData, getOrCreateUserData
 from cinPalette import *
 from cinYoinkytModule import setclipfile, clip, getClips, getAllClips, renderClips
@@ -439,9 +437,8 @@ async def on_reaction_add(reaction, user):
     if not reaction.message.author.bot:  # todo: specifically check if the message is from cinnamon
         return
 
-    if ">'s reminders:" in reaction.message.content:  # on user reaction to a reminder menu message sent by a bot
-        if len(reaction.emoji) == 1 and '🇦' <= reaction.emoji[0] <= '🇿': # with an alpha regional indicator emoji
-            await handleReminderMenuReaction(reaction, user)
+    if "reminder" in reaction.message.content.lower():
+        await handleReminderReaction(reaction, user)
 
 
 async def mcLoop():
@@ -457,28 +454,6 @@ async def mcLoop():
     else:
         printDefault("mcServer is None")
 
-async def handleReminders():
-    closestReminderTime, lateReminders = getReminderStatus()
-
-    for reminder in lateReminders:
-        channel = client.get_channel(reminder["channelID"])
-        author = client.get_user(reminder["userID"])
-
-        if reminder["text"] != "":
-            messageText = f'<@{reminder["userID"]}> reminder: \n> {reminder["text"]}'
-        else:
-            messageText = f'<@{reminder["userID"]}> reminder: \n> {"default text :3"}'
-
-        if channel:
-            await channel.send(messageText)
-        else:
-            await author.send(messageText)
-
-    if closestReminderTime != bigNumber:
-        hours = math.floor(closestReminderTime / 3600)
-        mins = math.floor((closestReminderTime / 60) % 60)
-        secs = math.floor(closestReminderTime % 60)
-        printDefault(f"next reminder is in {hours}h {mins}m {secs}s")
 
 lastStatusUpdateTime = 0
 @tasks.loop(seconds = loopDelay)
@@ -491,7 +466,7 @@ async def nonDiscordLoop():
         await mcLoop()
     if debugSettings["doReminders"]:
         #todo: use event structure for this instead of taping things to a loop
-        await handleReminders()
+        await checkForReminders(client)
 
     if time.time()-lastStatusUpdateTime > (60-loopDelay/2):
         lastStatusUpdateTime = time.time()
