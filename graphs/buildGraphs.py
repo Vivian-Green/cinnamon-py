@@ -87,20 +87,6 @@ def process_entry_point(entry_point, visited=set()):
 
 
 
-
-def get_png_width(file_path):                                           # todo: this but not AI, and functional. this does NOT need a fukin PIL import
-    """Retrieve the width of a PNG file from its header."""
-    with open(file_path, 'rb') as f:
-        # PNG header starts with 8 bytes followed by a 4-byte length and 4 bytes of IHDR chunk
-        # We want to read the width from the IHDR chunk
-        f.seek(16)  # Skip the 8-byte header + 4-byte chunk length
-        chunk_type = f.read(4)  # Should be 'IHDR'
-        print(f"chunk_type: {chunk_type}")
-        if chunk_type != b'IHDR':
-            return None
-        width, height = struct.unpack('>II', f.read(8))  # Read width and height (4 bytes each)
-        return width
-
 def cleanup_gv_files():
     """Deletes all .gv files in the current working directory."""
     cwd = os.getcwd()
@@ -118,11 +104,11 @@ def cleanup_empty_graphs():
     cwd = os.getcwd()
     png_files = [file for file in os.listdir(cwd) if file.endswith("CFG.png")]
 
+    from PIL import Image
     for png_file in png_files:
         try:
-            width = get_png_width(png_file)
-            print(width)
-            if width is not None and width < 500:
+            width = Image.open(png_file).width
+            if width and width < 500:
                 os.remove(png_file)
                 print(f"Deleted: {png_file} (width: {width}px)")
         except Exception as e:
