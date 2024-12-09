@@ -1,8 +1,11 @@
+import asyncio
 import os
 import ast
 import subprocess
+import sys
+import time
 
-import struct
+from PIL import Image
 
 
 def get_local_imports(file_path):
@@ -25,10 +28,7 @@ def get_local_imports(file_path):
     except Exception as e:
         print(f"Error parsing {file_path}: {e}")
 
-    # Filter out empty and duplicate entries
-    filtered_imports_list = list(filter(None, set(local_imports)))
-    print(filtered_imports_list)
-    return filtered_imports_list
+    return list(filter(None, set(local_imports)))
 
 
 def resolve_local_module(module_name, base_dir):
@@ -43,45 +43,27 @@ def resolve_local_module(module_name, base_dir):
     return None
 
 
-def generate_cfg(file_path):
-    """Generate a control flow graph for a Python file using code2flow."""
-    output_file = f"{os.path.basename(file_path).replace('.py', 'CFG.png')}"
-    subprocess.run(["code2flow", file_path, "--output", output_file], check=True)
-    print(f"Generated CFG for {file_path} -> {output_file}")
 
+def collect_files(entry_point):
+    """Collect all files that need processing starting from an entry point."""
+    to_visit = [os.path.abspath(entry_point)]
+    visited = set()
+    files = []
 
-def process_entry_point(entry_point, visited=set()):
-    """Recursively process an entry point and its local imports."""
-    if entry_point in visited:
-        return
-    visited.add(entry_point)
+    while to_visit:
+        current_file = to_visit.pop()
+        if current_file in visited:
+            continue
+        visited.add(current_file)
+        files.append(current_file)
 
-    # Generate CFG for the entry point
-    generate_cfg(entry_point)
+        base_dir = os.path.dirname(current_file)
+        for module in get_local_imports(current_file):
+            module_path = resolve_local_module(module, base_dir)
+            if module_path and module_path not in visited:
+                to_visit.append(module_path)
 
-    # Get local imports and process them recursively
-    base_dir = os.path.dirname(entry_point)
-    for module in get_local_imports(entry_point):
-        module_path = resolve_local_module(module, base_dir)
-        if module_path and module_path not in visited:
-            process_entry_point(module_path, visited)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return files
 
 
 
@@ -99,12 +81,12 @@ def cleanup_gv_files():
         except Exception as e:
             print(f"Error deleting {gv_file}: {e}")
 
+
 def cleanup_empty_graphs():
     """Deletes all ..CFG.png files in the current directory if their width is less than 500px."""
     cwd = os.getcwd()
     png_files = [file for file in os.listdir(cwd) if file.endswith("CFG.png")]
 
-    from PIL import Image
     for png_file in png_files:
         try:
             width = Image.open(png_file).width
@@ -116,24 +98,72 @@ def cleanup_empty_graphs():
 
 
 
+def generate_cfg(file_path):
+    start_time = time.time()
+    """Generate a control flow graph for a Python file using code2flow."""
+    output_file = f"{os.path.basename(file_path).replace('.py', 'CFG.png')}"
+    subprocess.run(
+        ["code2flow", file_path, "--output", output_file],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    print(f"Generated CFG for {file_path} -> {output_file}")
+    return {file_path: time.time() - start_time}
 
+async def process_files(files):
+    """Process all collected files"""
+    tasks = [asyncio.to_thread(generate_cfg, file_path) for file_path in files]
+    runtimes = await asyncio.gather(*tasks)
+    return runtimes
 
+async def main():
+    start_time = time.time()
+    entry_point = os.path.abspath("../bot.py")
 
+    if len(sys.argv) > 1:
+        dragged_file = sys.argv[1]
+        if os.path.isfile(dragged_file):  # Ensure the provided path is a file
+            entry_point = os.path.abspath(dragged_file)
 
+    # Step 1: Collect files
+    files = collect_files(entry_point)
+    print(f"Collected files: {files}\n")
+    file_collection_end_time = time.time()
 
+    # Step 2: Process files and get runtimes
+    runtimes = await process_files(files)
+    file_processing_end_time = time.time()
+    print("")
 
+    # Step 3: Cleanup
+    cleanup_start_time = time.time()
+    cleanup_gv_files()
+    cleanup_empty_graphs()
+    cleanup_end_time = time.time()
 
+    # Calculate runtime segments
+    total_runtime = cleanup_end_time - start_time
+    file_collection_time = file_collection_end_time - start_time
+    file_processing_time = file_processing_end_time - file_collection_end_time
+    cleanup_time = cleanup_end_time - cleanup_start_time
 
+    # Print individual runtimes for each file
+    lines = []
+    for runtime in runtimes:
+        for file_path, duration in runtime.items():
+            lines.append(f"\n   {round(duration, 2)}s ({os.path.getsize(file_path):,}B)   {os.path.basename(file_path)}")
 
+    print("\nIndividual file runtimes:", "".join(lines))
+
+    # Print total runtime breakdown
+    print(f"\nTotal runtime: {round(total_runtime, 2)}s",
+        f"\n    File collection: {round(file_collection_time, 2)}s",
+        f"\n    File processing: {round(file_processing_time, 2)}s",
+        f"\n    Cleanup: {round(cleanup_time, 2)}s"
+    )
 
 
 if __name__ == "__main__":
-    # Hardcoded paths
-    entry_point = os.path.abspath("../bot.py")
-
-    process_entry_point(entry_point)
-
-    cleanup_gv_files()
-
-    cleanup_empty_graphs()
-    
+    asyncio.run(main())
+    close_me = input("\nenter to close")
