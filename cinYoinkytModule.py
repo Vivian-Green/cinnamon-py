@@ -129,7 +129,8 @@ async def clipToggle(words, message):
     return
 
 
-async def renderClips(message):
+async def renderClips(words, message):
+    # ensure valid clip config
     if message.channel.name not in clip_file_names or not os.path.exists(clip_file_names[message.channel.name]):
         await message.channel.send("No clip configuration found. Use !>setclipfile to initialize.")
         return
@@ -142,14 +143,24 @@ async def renderClips(message):
     with open(targets_json_path, 'w') as file:
         json.dump(data, file, indent=4)
 
+    # build command
+    command = ['python', yoinkyt_py_path]
+    arg1 = words[1] if len(words) > 1 else None
+    arg2 = words[2] if len(words) > 2 else None
+    if arg1:
+        command.append(arg1)
+    if arg2:
+        command.append(arg2)
+
     # Open the new process in a separate window without waiting for it to finish
     script_directory = os.path.dirname(yoinkyt_py_path)
     subprocess.Popen(
-        ['python', yoinkyt_py_path],
+        command,
         cwd=script_directory,
         creationflags=subprocess.CREATE_NEW_CONSOLE
     )
-    message.channel.send("o7")
+    await message.channel.send("o7")
+
 
     
 async def clip(words, message):
@@ -189,14 +200,6 @@ async def clip(words, message):
     data = load_clip_file(message)
     if data is None:
         await message.channel.send("Json says no?")
-        return
-        
-    if message.content.lower().startswith("!>renderclips"):
-        with open(targets_json_path, 'w') as file:
-            json.dump(data, file, indent=4)
-        
-        subprocess.Popen(['python', yoinkyt_py_path])
-        
         return
 
     #       check valid timestamp

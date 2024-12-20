@@ -299,7 +299,7 @@ async def handleCommand(message):
         case "getallclips":
             await getAllClips(message)
         case "renderclips":
-            await renderClips(message)
+            await renderClips(words, message)
 
         # Default case if no command matches
         case _:
