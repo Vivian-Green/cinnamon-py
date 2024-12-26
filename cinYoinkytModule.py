@@ -3,20 +3,32 @@ import json
 import difflib
 import time
 import subprocess
+from cinIO import loadCache
+from cinLogging import printLabelWithInfo
 from pytube import Playlist
-
-trust_cache_time_seconds = 60 * 60
 
 clip_file_names = {}
 lastVideoIndex = 0
 
-targets_json_path = "C:\\Users\\acorb\\Documents\\GitHub\\Yoinkyt\Yoinkyt\\targets.json"
-yoinkyt_py_path = "C:\\Users\\acorb\\Documents\\GitHub\\Yoinkyt\Yoinkyt\\yoinkyt.py"
-
-
-
 get_links_memo = {}
 trust_links_memo_timestamp = 0
+
+def getDefaultCache():
+    return {
+        "targets.json_path": os.path.expanduser("~\\Documents\\Yoinkyt\\targets.json"),
+        "yoinkyt.py_path": os.path.expanduser("~\\Documents\\Yoinkyt\\yoinkyt.py"),
+        "trust_cache_time_seconds": 3600,
+        
+    }
+
+# Variables
+default_cache = getDefaultCache()  # Populate default cache
+yoinkyt_config = loadCache("yoinkyt/yoinkys_config.json", default_cache)
+
+targets_json_path = yoinkyt_config["targets.json_path"]
+yoinkyt_py_path = yoinkyt_config["yoinkyt.py_path"]
+trust_cache_time_seconds = yoinkyt_config["trust_cache_time_seconds"]
+
 def get_links(url): # todo: this is already in yoinkyt's common.py and has just been accidentally reengineered lmao, use whichever is better for both
     global get_links_memo
     global trust_links_memo_timestamp
@@ -70,7 +82,7 @@ def load_clip_file(message):
 
 
 
-async def setclipfile(words, message):
+async def setclipfile(words, message): 
     global clip_file_names
     print(words)
 
@@ -80,18 +92,31 @@ async def setclipfile(words, message):
 
     filename = words[1]
 
-    # Check if the file already exists
-    if os.path.exists(filename):
-        await message.channel.send(f"Loading clip configuration from {filename}.")
+    # Define the cache directory based on guild_id
+    guild_id = message.guild.id  # Assuming `guild_id` is available from the message object
+    cache_dir = os.path.join(".", "cache", "yoinkyt", str(guild_id))
+
+    # Ensure the cache directory exists
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir, exist_ok=True)
+
+    # Construct the full path for the file
+    filepath = os.path.join(cache_dir, filename)
+
+    # Check if the file already exists in the cache directory
+    if os.path.exists(filepath):
+        await message.channel.send(f"Loading clip configuration from {filepath}.")
     else:
-        json_files = [f for f in os.listdir() if f.endswith('.json')]
+        # Search for a close match within the cache directory
+        json_files = [f for f in os.listdir(cache_dir) if f.endswith('.json')]
         closest_match = difflib.get_close_matches(f"targets_{filename}", json_files, n=1, cutoff=0.75)
 
         if closest_match:
             filename = closest_match[0]
+            filepath = os.path.join(cache_dir, filename)
             await message.channel.send(f"Found a close match for the alias: {filename}")
         else:
-            # on 404, require url to build it
+            # On 404, require URL to build the file
             if len(words) < 3:
                 await message.channel.send("Usage: !>setclipfile <filename.json> <url>")
                 return False
@@ -101,17 +126,19 @@ async def setclipfile(words, message):
 
             data = {url: []}
             data[url].append({"prefix": "ep "})
-            for i in range(len(links)): # pad to length of playlist
+            for i in range(len(links)):  # Pad to length of playlist
                 data[url].append({})
 
             await message.channel.send(f"New clip configuration created for {url}.")
 
-            with open(filename, 'w') as file:
+            # Save the new configuration file in the cache directory
+            with open(filepath, 'w') as file:
                 json.dump(data, file, indent=4)
 
-    clip_file_names[message.channel.name] = filename
+    # Update the global clip_file_names dictionary with the channel name and filepath
+    clip_file_names[message.channel.name] = filepath
 
-    await message.channel.send(f"Clip configuration saved to {filename}.")
+    await message.channel.send(f"Clip configuration saved to {filepath}.")
     return True
 
 
@@ -130,7 +157,11 @@ async def clipToggle(words, message):
 
 
 async def renderClips(words, message):
-    # ensure valid clip config
+    if message.channel.name not in clip_file_names:
+        if not await setclipfile(["!>setclipfile", message.channel.name], message):
+            return
+
+    # Ensure valid clip configuration
     if message.channel.name not in clip_file_names or not os.path.exists(clip_file_names[message.channel.name]):
         await message.channel.send("No clip configuration found. Use !>setclipfile to initialize.")
         return
@@ -139,27 +170,59 @@ async def renderClips(words, message):
     if data is None:
         await message.channel.send("Json says no?")
         return
-        
-    with open(targets_json_path, 'w') as file:
-        json.dump(data, file, indent=4)
 
-    # build command
+    # Write data to the targets JSON file
+    try:
+        with open(targets_json_path, 'w') as file:
+            json.dump(data, file, indent=4)
+    except Exception as e:
+        await message.channel.send(f"Error writing to targets.json: {e}")
+        return
+
+    # Build command
     command = ['python', yoinkyt_py_path]
     arg1 = words[1] if len(words) > 1 else None
     arg2 = words[2] if len(words) > 2 else None
-    if arg1:
-        command.append(arg1)
-    if arg2:
-        command.append(arg2)
+    message_errs = True and arg1
 
-    # Open the new process in a separate window without waiting for it to finish
-    script_directory = os.path.dirname(yoinkyt_py_path)
-    subprocess.Popen(
-        command,
-        cwd=script_directory,
-        creationflags=subprocess.CREATE_NEW_CONSOLE
-    )
-    await message.channel.send("o7")
+    try:
+        # Process arg1
+        arg1 = str(int(arg1)) if arg1 else "1"
+    except Exception as e:
+        printLabelWithInfo("!>renderClips", f"Error on arg 1: {e}. Using default: 1")
+        arg1 = "1"
+        if message_errs:
+            message.channel.send(f"Error on arg 1: {e}. Using default: 1")
+    command.append(arg1)
+
+    try:
+        # Process arg2
+        if arg2:
+            arg2 = str(int(arg2) + 1)
+        else:
+            message_errs = False
+            playlist_length = 999
+            arg2 = str(playlist_length)  # Default to the playlist length
+    except Exception as e:
+        playlist_length = 999
+        printLabelWithInfo("!>renderClips", f"Error on arg 2: {e}. Using default: {999}")
+        arg2 = str(playlist_length)
+        if message_errs:
+            message.channel.send(f"Error on arg 2: {e}. Using default: {999}")
+    command.append(arg2)
+
+    try:
+        # Open the new process in a separate window without waiting for it to finish
+        script_directory = os.path.dirname(yoinkyt_py_path)
+        subprocess.Popen(
+            command,
+            cwd=script_directory,
+            creationflags=subprocess.CREATE_NEW_CONSOLE
+        )
+        await message.channel.send(f"trying `{' '.join(command)}` o7")
+    except Exception as e:
+        await message.channel.send(f"Error executing render command: {e}")
+
 
 
     

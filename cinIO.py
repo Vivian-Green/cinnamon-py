@@ -41,17 +41,37 @@ def loadConfig(fileName: str):
             # todo: logging
             print(f"invalid file format for config {filePath}")
 
-def loadCache(fileName: str):
-    filePath = os.path.join(cachePath + fileName)
+def loadCache(fileName: str, default_value=None):
+    filePath = os.path.join(cachePath, fileName)
+    
+    # Check if the file exists
+    parentDir = os.path.dirname(filePath)
+    os.makedirs(parentDir, exist_ok=True)
+    
     if os.path.isfile(filePath):
-        return json.load(open(filePath))
+        with open(filePath, 'r') as f:
+            return json.load(f)
     else:
-        overwriteCache(fileName, {})
+        # Use the provided default value or an empty dictionary
+        if default_value is None:
+            default_value = {}
+        
+        # Write the default value to the cache and return it
+        overwriteCache(fileName, default_value)
+        return default_value
 
 def overwriteCache(fileName: str, newData):
-    thisCachePath = os.path.join(cachePath + fileName)
+    thisCachePath = os.path.join(cachePath, fileName)
+    
+    # Ensure parent directories exist
+    parentDir = os.path.dirname(thisCachePath)
+    os.makedirs(parentDir, exist_ok=True)
+    
+    # Remove existing file if it exists
     if os.path.isfile(thisCachePath):
         os.remove(thisCachePath)
+    
+    # Write new data to the cache file
     with open(thisCachePath, 'w') as f:
         json.dump(newData, f, indent=4)
 
